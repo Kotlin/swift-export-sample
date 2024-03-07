@@ -3,21 +3,17 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     repositories {
-        mavenLocal()
-        google()
         gradlePluginPortal()
         mavenCentral()
-        maven {
-            url = uri("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
-        }
+        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
     }
 }
 
 dependencyResolutionManagement {
     repositories {
-        mavenLocal()
-        google()
         mavenCentral()
+        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/swift-export-experimental")
     }
 }
 
