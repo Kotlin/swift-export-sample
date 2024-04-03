@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.0.0-dev-18070"
+kotlin = "2.0.20-dev-436"
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
