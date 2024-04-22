@@ -18,10 +18,3 @@ kotlin {
     }
 }
 
-
-tasks.register("_testSwiftExportClasspath") {
-    doLast {
-        configurations.getByName("swiftExportClasspathResolvable").resolve()
-    }
-}
-
