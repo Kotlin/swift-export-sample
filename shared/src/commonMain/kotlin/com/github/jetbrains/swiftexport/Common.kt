@@ -1,7 +1,9 @@
-package com.github.jetbrains.swiftexport
+class MyClass(val property: Int) {
 
-fun foo(): Int = 321
+    class Nested(val nestedProperty: Int)
+}
 
-fun bar(): Int = 123
+typealias MyNested = MyClass.Nested
 
-fun foobar(param: Int): Int = foo() + bar() + param
+fun sum(a: MyClass, b: MyNested): Int =
+    a.property + b.nestedProperty
