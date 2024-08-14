@@ -8,22 +8,54 @@
 
 import XCTest
 @testable import Shared
+@testable import ModuleA
+@testable import ModuleB
 
-final class iosAppTests: XCTestCase {
+final class SharedTests: XCTestCase {
 
-    func testFoo() {
-        let result = com.github.jetbrains.swiftexport.foo()
-        XCTAssertEqual(result, 321, "foo() should return the expected result")
+    func testSharedFunction() {
+        let result = sharedFunction()
+        XCTAssertEqual(result, 15, "sharedFunction() should return the expected result")
+    }
+
+    func testClassFromA() {
+        let result = useClassFromA()
+        XCTAssertEqual(result.hello(), "Hello from class_A", "useClassFromA() should return the expected result")
+    }
+
+    func testClassFromB() {
+        let result = useClassFromB()
+        XCTAssertEqual(result.hello(), "Hello from class_B", "useClassFromB() should return the expected result for the given parameter")
     }
 
     func testBar() {
-        let result = com.github.jetbrains.swiftexport.bar()
-        XCTAssertEqual(result, 123, "bar() should return the expected result")
+        let result = iosBar()
+        XCTAssertEqual(result, 125, "iosBar() should return the expected result for the given parameter")
+    }
+}
+
+final class ModuleATests: XCTestCase {
+
+    func testModuleAClass() {
+        let instance = ClassFromA(name: "A")
+        XCTAssertEqual(instance.hello(), "Hello from A", "hello() should return the expected result")
     }
 
-    func testFoobar() {
-        let param: Swift.Int32 = 42
-        let result = com.github.jetbrains.swiftexport.foobar(param: param)
-        XCTAssertEqual(result, 486, "foobar() should return the expected result for the given parameter")
+    func testBar() {
+        let result = iosModuleABar()
+        XCTAssertEqual(result, 54321, "iosModuleABar() should return the expected result for the given parameter")
+    }
+}
+
+final class ModuleBTests: XCTestCase {
+
+    func testModuleBClass() {
+        let instance = ClassFromB(name: "B")
+        XCTAssertEqual(instance.hello(), "Hello from B", "hello() should return the expected result")
+    }
+
+    func testBar() {
+        let result = iosModuleBBar()
+        XCTAssertEqual(result, 12345, "iosModuleBBar() should return the expected result for the given parameter")
     }
 }
