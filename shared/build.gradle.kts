@@ -18,14 +18,14 @@ kotlin {
         flattenPackage = "com.github.jetbrains.swiftexport"
 
         // Export external modules
-        export(project(":module-a")) {
+        export(projects.moduleA) {
             // Exported module name
             moduleName = "ModuleA"
             // Collapse exported dependency rule
             flattenPackage = "com.github.jetbrains.modulea"
         }
 
-        export(project(":module-b")) {
+        export(projects.moduleB) {
             // Exported module name
             moduleName = "ModuleB"
             // Collapse exported dependency rule
@@ -34,8 +34,8 @@ kotlin {
     }
 
     sourceSets.commonMain.dependencies {
-        api(project(":module-a"))
-        api(project(":module-b"))
+        api(projects.moduleA)
+        api(projects.moduleB)
     }
 }
 

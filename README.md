@@ -2,7 +2,7 @@
 
 # Kotlin Swift Export Sample
 
-This project demonstrates how to export Kotlin code as native Swift modules using JetBrains' Kotlin Multiplatform. The sample consists of three modules: `:shared`, `:module-a`, and `:module-b`, and showcases how to configure the DSL to export these Kotlin modules into Swift with custom configurations.
+This project demonstrates how to export Kotlin code as native Swift modules using JetBrains' Kotlin Multiplatform. The sample consists of three modules: `:shared`, `:module-a`, and `:module-b`, showcasing how to configure the DSL to export these Kotlin modules into Swift with custom configurations.
 
 ## Project Structure
 
@@ -51,9 +51,24 @@ kotlin {
 }
 ```
 
-### Key Features
+## Getting Started
+
+### Prerequisites
+
+- Enable Swift Export by adding `kotlin.experimental.swift-export.enabled=true` to your `local.properties` or `gradle.properties`.
+
+### Running the Project
+
+1. Clone this repository.
+2. Open the project `iosApp/iosApp.xcodeproj` with Xcode (tested with version 15.4).
+3. Ensure you have the following command in your Run Script build phase: `./gradlew :shared:embedSwiftExportForXcode`.
+4. Build the project. The Swift modules will be generated and can be found in the build output directory.
+
+## Key Features
 
 - **moduleName:** Allows setting a custom module name for the exported Kotlin module. For instance, the `:module-a` module is exported as `ModuleA` in Swift.
-- **flattenPackage:** This is a package collapsing rule that simplifies package usage in Swift. In Kotlin, modules are typically organized within packages (e.g., `com.github.jetbrains.modulea`). By using `flattenPackage`, you can omit the package name and directly use classes from the module in Swift.
+- **flattenPackage:** A package collapsing rule that simplifies package usage in Swift. In Kotlin, modules are typically organized within packages (e.g., `com.github.jetbrains.modulea`). Using `flattenPackage`, you can omit the package name and directly use classes from the module in Swift.
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+## Learn More
+
+- For more information on Kotlin Multiplatform, check out the [Kotlin Multiplatform Documentation](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html).
