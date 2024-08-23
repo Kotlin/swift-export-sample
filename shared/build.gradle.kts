@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.swiftexport.ExperimentalSwiftExportDsl
+import org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)

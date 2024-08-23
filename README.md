@@ -4,6 +4,10 @@
 
 This project demonstrates how to export Kotlin code as native Swift modules using JetBrains' Kotlin Multiplatform. The sample consists of three modules: `:shared`, `:module-a`, and `:module-b`, showcasing how to configure the DSL to export these Kotlin modules into Swift with custom configurations.
 
+## ⚠️ Experimental Feature Notice
+
+**Swift Export is an experimental feature and subject to change in any future releases.** It may not function as expected, and you may encounter bugs. This project serves as an early technology demonstration and is **not production-ready**. Use it at your own risk.
+
 ## Project Structure
 
 - `:shared` - The main shared module that aggregates and exports the other modules (`:module-a` and `:module-b`) as native Swift modules.
