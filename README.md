@@ -64,7 +64,7 @@ kotlin {
 ### Running the Project
 
 1. Clone this repository.
-2. Open the project `iosApp/iosApp.xcodeproj` with Xcode (tested with version 15.4).
+2. Open the project `iosApp/iosApp.xcodeproj` with Xcode (tested with version 16.0).
 3. Ensure you have the following command in your Run Script build phase: `./gradlew :shared:embedSwiftExportForXcode`.
 4. Build the project. The Swift modules will be generated and can be found in the build output directory.
 
