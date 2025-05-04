@@ -4,7 +4,6 @@ import com.github.jetbrains.modulea.ClassFromA
 import com.github.jetbrains.moduleb.ClassFromB
 
 class MyClass(val property: Int) {
-
     class Nested(val nestedProperty: Int)
 }
 
@@ -22,3 +21,14 @@ fun useClassFromB(): ClassFromB {
 }
 
 fun sharedFunction(): Int = 15
+
+fun String.repeated(times: Int): String {
+    return "hello hello!"
+}
+
+val String.len: Int get() = length
+
+fun overloaded(x: String) {}
+fun overloaded(x: Int) {}
+fun overloaded(x: Double) {}
+
