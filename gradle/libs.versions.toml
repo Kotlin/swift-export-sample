@@ -1,5 +1,6 @@
 [versions]
-kotlin = "2.2.20-dev-4982"
+kotlin = "2.2.255-SNAPSHOT"
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
