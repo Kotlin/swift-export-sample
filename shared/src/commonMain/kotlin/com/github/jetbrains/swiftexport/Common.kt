@@ -31,4 +31,3 @@ val String.len: Int get() = length
 fun overloaded(x: String) {}
 fun overloaded(x: Int) {}
 fun overloaded(x: Double) {}
-

@@ -3,6 +3,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     repositories {
+        mavenLocal()
         maven("https://packages.jetbrains.team/maven/p/kt/bootstrap/") {}
         gradlePluginPortal()
         mavenCentral()
@@ -12,6 +13,7 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
+        mavenLocal()
         maven("https://packages.jetbrains.team/maven/p/kt/bootstrap/") {}
         mavenCentral()
     }

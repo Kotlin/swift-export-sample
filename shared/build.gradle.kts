@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.swiftexport.SWIFT_EXPORT_COROUTINES_SUPPORT_TURNED_ON
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -30,6 +31,10 @@ kotlin {
             moduleName = "ModuleB"
             // Collapse exported dependency rule
             flattenPackage = "com.github.jetbrains.moduleb"
+        }
+
+        configure {
+            settings.put(SWIFT_EXPORT_COROUTINES_SUPPORT_TURNED_ON, "true")
         }
     }
 
