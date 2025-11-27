@@ -41,6 +41,7 @@ kotlin {
     sourceSets.commonMain.dependencies {
         api(projects.moduleA)
         api(projects.moduleB)
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     }
 }
 

@@ -24,6 +24,9 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .padding()
+        .task {
+            print(await iosSuspendFunction())
+        }
     }
 
     func testSwiftExport(){
