@@ -1,5 +1,9 @@
 [versions]
-kotlin = "2.2.20-dev-4982"
+kotlin = "2.4.0-dev-3656"
+kotlinx-coroutines = "1.10.2"
+
+[libraries]
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
