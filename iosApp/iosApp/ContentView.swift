@@ -44,7 +44,7 @@ struct ContentView: View {
                     }
             } else {
                 let userNames = suspendCallResult!.map { it in it.name }
-                Text("Loaded Users: \(userNames)")
+                Text("Loaded Users: \(userNames.joined(separator: ", "))")
             }
             
             // flow demo
