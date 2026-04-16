@@ -57,10 +57,6 @@ kotlin {
 
 ## Getting Started
 
-### Prerequisites
-
-- Enable Swift Export by adding `kotlin.experimental.swift-export.enabled=true` to your `local.properties` or `gradle.properties`.
-
 ### Running the Project
 
 1. Clone this repository.

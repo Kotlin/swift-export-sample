@@ -88,7 +88,7 @@ struct UsersDetailView: View {
                         items.append(user)
                     }
                 } catch {
-                    print("flow wos cancelled?")
+                    print("flow was cancelled?")
                 }
             }
         }
