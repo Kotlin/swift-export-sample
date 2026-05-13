@@ -8,7 +8,7 @@ object TypeSystemImprovements {
     }
 
     // crash at runtime before 2.4.0
-    fun <T> chackType(input: T): ReceivedType = when(input) {
+    fun <T> checkType(input: T): ReceivedType = when(input) {
         is String -> ReceivedType.IsString
         is Int -> ReceivedType.IsInt
         is List<*> -> ReceivedType.IsArray

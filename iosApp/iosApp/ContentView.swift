@@ -56,8 +56,8 @@ struct ContentView: View {
             }
             
             // type system improvements
-            Text("String now can be consumed as Any: \(TypeSystemImprovements.shared.chackType(input: "str"))")
-            Text("Arrays now can be consumed as Any: \(TypeSystemImprovements.shared.chackType(input: [1,2,3]))")
+            Text("String now can be consumed as Any: \(TypeSystemImprovements.shared.checkType(input: "str"))")
+            Text("Arrays now can be consumed as Any: \(TypeSystemImprovements.shared.checkType(input: [1,2,3]))")
             
             // enum demo
             let e = enumDemonstration()
