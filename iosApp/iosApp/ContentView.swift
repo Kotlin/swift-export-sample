@@ -54,9 +54,24 @@ struct ContentView: View {
             .sheet(isPresented: $showDetails) {
                 UsersDetailView(vm: vm)
             }
+            
+            // type system improvements
+            Text("String now can be consumed as Any: \(TypeSystemImprovements.shared.chackType(input: "str"))")
+            Text("Arrays now can be consumed as Any: \(TypeSystemImprovements.shared.chackType(input: [1,2,3]))")
+            
+            // enum demo
+            let e = enumDemonstration()
+            switch e {
+            case .FirstCase: Text("EnumDemo received first case with property: \(e.i)")
+            case .SecondCase: Text("EnumDemo received second case with property: \(e.i)")
+            }
+            
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .padding()
+        .task {
+            demoSuspendableClosure()
+        }
     }
 
     func testSwiftExport(){
@@ -66,6 +81,16 @@ struct ContentView: View {
         let _ = getLen("Hello")
         //Overloading functions
         overloaded(x: "hello")
+    }
+    
+    func demoSuspendableClosure() {
+        // suspend functional type demo
+        // this scope has no async context - we cannot await
+        // try! await vm.loadUsers() // <--- error
+        vm.runSuspendBlock {
+            // here we have async context - and we can await
+            print("hello from suspendable closure - here we can await \(try! await vm.loadUsers())")
+        }
     }
 }
 
@@ -83,8 +108,9 @@ struct UsersDetailView: View {
                 items.removeAll()
 
                 do {
-                    // usage of typed flows 
-                    for try await user in vm.users {
+                    // usage of typed flows
+                    // Attention - no force cast needed, user variable is already typed as User
+                    for try await user in vm.users.asAsyncSequence() {
                         items.append(user)
                     }
                 } catch {
