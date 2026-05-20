@@ -5,7 +5,6 @@ plugins {
 }
 
 kotlin {
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 
@@ -34,6 +33,7 @@ kotlin {
     }
 
     sourceSets.commonMain.dependencies {
+        implementation(libs.kotlinx.coroutines.core)
         api(projects.moduleA)
         api(projects.moduleB)
     }
