@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidMultiplatformLibrary)
 }
 
 kotlin {
@@ -36,6 +37,12 @@ kotlin {
         implementation(libs.kotlinx.coroutines.core)
         api(projects.moduleA)
         api(projects.moduleB)
+    }
+
+    android {
+        namespace = "com.github.jetbrains.swiftexport"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
     }
 }
 
