@@ -36,6 +36,9 @@ struct ContentView: View {
             })
             Text("Demonstration of \"swift-only library\" usage from kotlin: \(reverseImportExample(platform: platform))")
             
+            let provider = IosCryptoProvider()
+            Text("Demonstration of \"swift-only library\" usage from kotlin - inheritance: \(processHash(provider: provider, input: "Hello, world!"))")
+            
             // suspend call
             if suspendCallResult == nil {
                 Text("Loading of Users is called")
@@ -127,4 +130,11 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
     }
+}
+
+final class IosCryptoProvider: SwiftBase, CryptoProvider {
+   func hashMD5(input: String) -> String {
+       guard let data = input.data(using: .utf8) else { return "failed" }
+       return Insecure.MD5.hash(data: data).description
+   }
 }
