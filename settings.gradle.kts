@@ -13,6 +13,15 @@ dependencyResolutionManagement {
     repositories {
         maven("https://redirector.kotlinlang.org/maven/dev")
         mavenCentral()
+        ivy {
+            url = uri("https://download.jetbrains.com/kotlin/native/builds/dev")
+            patternLayout {
+                artifact("[revision]/[classifier]/[artifact]-[classifier]-[revision].[ext]")
+            }
+            metadataSources {
+                artifact()
+            }
+        }
     }
 }
 

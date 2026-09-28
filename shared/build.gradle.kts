@@ -8,27 +8,24 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
-    @OptIn(ExperimentalSwiftExportDsl::class)
-    swiftExport {
-        // Root module name
-        moduleName = "Shared"
+    export {
+        @OptIn(ExperimentalSwiftExportDsl::class)
+        swift {
+            // Root module name
+            moduleName = "Shared"
+            // Collapse rule
+            rootPackage = "com.github.jetbrains.swiftexport"
 
-        // Collapse rule
-        flattenPackage = "com.github.jetbrains.swiftexport"
-
-        // Export external modules
-        export(projects.moduleA) {
-            // Exported module name
-            moduleName = "ModuleA"
-            // Collapse exported dependency rule
-            flattenPackage = "com.github.jetbrains.modulea"
-        }
-
-        export(projects.moduleB) {
-            // Exported module name
-            moduleName = "ModuleB"
-            // Collapse exported dependency rule
-            flattenPackage = "com.github.jetbrains.moduleb"
+            // Register :embedSwiftExportForXcode task
+            xcodeIntegration {
+                // Explicitly reconfigure exported module
+                configure(projects.moduleB) {
+                    // Exported module name
+                    moduleName = "ModuleB"
+                    // Collapse exported dependency rule
+                    rootPackage = "com.github.jetbrains.moduleb"
+                }
+            }
         }
     }
 
