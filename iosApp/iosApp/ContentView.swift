@@ -76,9 +76,9 @@ struct ContentView: View {
 
     func testSwiftExport(){
         //Extension function
-        let _ = repeated("Hello!", times: 3)
+        let _ = "Hello!".repeated(times: 3)
         //Extension property
-        let _ = getLen("Hello")
+        let _ = "Hello".len
         //Overloading functions
         overloaded(x: "hello")
     }
