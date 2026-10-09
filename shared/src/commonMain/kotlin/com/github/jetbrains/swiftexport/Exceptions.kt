@@ -18,3 +18,22 @@ class PositiveNumber @Throws(IllegalArgumentException::class) constructor(val va
         require(value > 0) { "$value is not positive" }
     }
 }
+
+// Exception payloads are regular properties in Swift, so `catch` can read them
+class InsufficientFundsException(val missing: Int) : Exception("Missing $missing")
+
+// Methods annotated with @Throws become Swift throwing methods as well
+class Wallet @Throws(IllegalArgumentException::class) constructor(balance: Int) {
+    var balance: Int = balance
+        private set
+
+    init {
+        require(balance >= 0) { "Balance can't be negative" }
+    }
+
+    @Throws(InsufficientFundsException::class)
+    fun pay(amount: Int) {
+        if (amount > balance) throw InsufficientFundsException(amount - balance)
+        balance -= amount
+    }
+}

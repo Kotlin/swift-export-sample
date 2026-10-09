@@ -15,6 +15,8 @@ struct EnumsView: View {
             DemoRow(".WEST.degrees", Direction.WEST.degrees)
             DemoRow("Direction.allCases", Direction.allCases.map(\.description).joined(separator: ", "))
             DemoRow(".SOUTH.rawValue (ordinal)", Direction.SOUTH.rawValue)
+            DemoRow("Direction(rawValue: 1)", Direction(rawValue: 1))
+            DemoRow("Direction(\"WEST\")", Direction("WEST"))
         }
     }
 

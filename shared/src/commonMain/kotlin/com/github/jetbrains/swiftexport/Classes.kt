@@ -19,6 +19,19 @@ typealias MyNested = MyClass.Nested
 
 fun sum(a: MyClass, b: MyNested): Int = a.property + b.nestedProperty
 
+// An inner class can also mutate its outer instance
+class StepCounter {
+    var value: Int = 0
+        private set
+
+    inner class Step(val by: Int) {
+        fun apply(): Int {
+            value += by
+            return value
+        }
+    }
+}
+
 // Open and abstract classes can be subclassed, also from Swift
 abstract class Shape(val name: String) {
     abstract fun area(): Double
@@ -61,9 +74,18 @@ class Temperature private constructor(val celsius: Double) {
     val fahrenheit: Double get() = celsius * 9 / 5 + 32
 
     companion object {
+        val freezing: Temperature = Temperature(0.0)
+
         fun fromCelsius(value: Double): Temperature = Temperature(value)
         fun fromFahrenheit(value: Double): Temperature = Temperature((value - 32) * 5 / 9)
     }
+}
+
+// Objects can call `expect` declarations; each platform links its own `actual`
+object AppInfo {
+    val name: String = "Swift Export sample"
+
+    fun banner(): String = "$name on ${osName()}"
 }
 
 // Data classes: `copy` is exported, while equals/hashCode/toString are

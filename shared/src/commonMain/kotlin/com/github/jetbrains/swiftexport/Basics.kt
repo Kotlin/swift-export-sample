@@ -1,4 +1,9 @@
+@file:OptIn(ExperimentalObjCName::class)
+
 package com.github.jetbrains.swiftexport
+
+import kotlin.experimental.ExperimentalObjCName
+import kotlin.native.ObjCName
 
 // Top-level declarations become Swift global functions and properties.
 // Thanks to `rootPackage`, they are available without the package prefix.
@@ -43,11 +48,18 @@ fun describe(value: Int): String = "Int $value"
 fun describe(value: Double): String = "Double $value"
 fun describe(value: String): String = "String \"$value\""
 
+// @ObjCName renames a top-level function in Swift
+@ObjCName(swiftName = "shout")
+fun makeLoud(text: String): String = text.uppercase()
+
 // vararg becomes a Swift variadic parameter
 fun sumAll(vararg numbers: Int): Int = numbers.sum()
 
 // Default arguments are not supported yet: Swift callers pass every argument
 fun formatPrice(amount: Double, currency: String = "EUR"): String = "$amount $currency"
+
+// Add an overload for the common case, because the default value is not exported
+fun formatPrice(amount: Double): String = formatPrice(amount, "EUR")
 
 // Any is exported as `any KotlinRuntimeSupport._KotlinBridgeable`
 fun typeOf(value: Any): String = when (value) {

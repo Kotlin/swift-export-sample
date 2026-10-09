@@ -18,6 +18,9 @@ fun digits(): IntRange = 0..9
 
 fun isAdult(age: Int): Boolean = age in 18..Int.MAX_VALUE
 
+// A range parameter becomes a Swift `ClosedRange<Int32>`
+fun evensIn(range: IntRange): List<Int> = range.filter { it % 2 == 0 }
+
 // Mutable collections and arrays stay Kotlin types
 fun mutableNames(): MutableList<String> = mutableListOf("Kotlin", "Swift")
 

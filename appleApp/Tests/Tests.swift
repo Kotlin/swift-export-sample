@@ -11,6 +11,8 @@ import ModuleC
 import ModuleD
 // Members inherited from stdlib classes, such as Throwable.message, live in KotlinStdlib
 import KotlinStdlib
+// KotlinBase, which Swift implementations of Kotlin interfaces inherit, lives in KotlinRuntime
+import KotlinRuntime
 
 // These tests run on iOS and macOS against the modules embedded into the app by `embedSwiftExportForXcode`.
 // spm-consumer/Tests checks the same features against the exported Swift package.
@@ -236,10 +238,10 @@ final class ClassesTests: XCTestCase {
 // MARK: - Interfaces
 
 /// Swift implementation of a Kotlin interface, passed back to Kotlin
-final class FrenchGreeting: GreetingBase, Greeting {
-    var language: String { "French" }
+final class SwiftGreeting: KotlinBase, Greeting {
+    var language: String { "Swift" }
 
-    func greet(name: String) -> String { "Bonjour, \(name)!" }
+    func greet(name: String) -> String { "Hello from Swift, \(name)!" }
 }
 
 final class InterfacesTests: XCTestCase {
@@ -253,10 +255,10 @@ final class InterfacesTests: XCTestCase {
     }
 
     func testSwiftImplementationsOfKotlinInterfaces() {
-        let all: [any Greeting] = greetings() + [FrenchGreeting()]
-        XCTAssertEqual(greetEveryone(greetings: all, name: "Kodee"), ["Hello, Kodee!", "Hallo, Kodee!", "Bonjour, Kodee!"])
+        let all: [any Greeting] = greetings() + [SwiftGreeting()]
+        XCTAssertEqual(greetEveryone(greetings: all, name: "Kodee"), ["Hello, Kodee!", "Hallo, Kodee!", "Hello from Swift, Kodee!"])
         // The Kotlin default implementation of greetAll calls the Swift greet
-        XCTAssertEqual(FrenchGreeting().greetAll(names: ["A"]), ["Bonjour, A!"])
+        XCTAssertEqual(SwiftGreeting().greetAll(names: ["A"]), ["Hello from Swift, A!"])
     }
 
     func testFunctionalInterfaces() {
