@@ -31,6 +31,7 @@ struct FeatureCatalog: View {
                 Section("Concurrency") {
                     FeatureLink("Coroutines", "suspend → async throws, cancellation") { CoroutinesView() }
                     FeatureLink("Flows", "Flow, StateFlow → typed AsyncSequence") { FlowsView() }
+                    FeatureLink("Implementing in Swift", "a Kotlin interface with Flow and suspend, in Swift") { SwiftImplementationView() }
                 }
                 Section("Modules") {
                     FeatureLink("Modules", "one Swift module per exported Kotlin module") { ModulesView() }
