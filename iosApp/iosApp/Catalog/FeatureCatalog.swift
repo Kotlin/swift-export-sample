@@ -35,6 +35,7 @@ struct FeatureCatalog: View {
                 Section("Modules") {
                     FeatureLink("Modules", "one Swift module per exported Kotlin module") { ModulesView() }
                     FeatureLink("Platform code", "iosMain and expect/actual") { PlatformView() }
+                    FeatureLink("Hiding a dependency", "Koin leaked into the API, hidden with HIDDEN") { HiddenDependencyView() }
                 }
             }
             .navigationTitle("Swift Export")
