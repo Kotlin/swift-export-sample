@@ -31,6 +31,7 @@ The app opens on a list of features. Every feature has a Kotlin file in `shared/
 | | Exceptions | `Exceptions.kt` | `ExceptionsView.swift` | `@Throws` → `throws`, catching Kotlin exceptions by type |
 | Concurrency | Coroutines | `Coroutines.kt` | `CoroutinesView.swift` | `suspend` → `async throws`, suspend lambdas, cancelling a Swift `Task` cancels the coroutine |
 | | Flows | `Flows.kt` | `FlowsView.swift` | `Flow<T>` → typed `AsyncSequence`, `StateFlow.value`, setting a `MutableStateFlow` from Swift |
+| | Implementing in Swift | `SwiftImplementation.kt` | `SwiftImplementationView.swift` | A Swift class implementing a Kotlin interface with a `Flow` property and a `suspend fun`, using a Kotlin-provided `MutableStateFlow`; Kotlin code consumes it |
 | Modules | Modules | `Modules.kt`, `:module-a`, `:module-b` | `ModulesView.swift` | One Swift module per exported Kotlin module, library vs. consumer configuration |
 | | Platform code | `Platform.kt`, `Platform.ios.kt` | `PlatformView.swift` | `iosMain` code and `expect`/`actual` |
 | | Hiding a dependency | `HiddenDependency.kt` | `HiddenDependencyView.swift` | Koin leaked into the public API and hidden with `SwiftExportVisibility.HIDDEN` |

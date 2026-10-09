@@ -14,9 +14,9 @@ import kotlinx.coroutines.flow.flow
 // Leaving the loop cancels the collection.
 // `StateFlow<T>` also has a typed `value`; a `MutableStateFlow<T>` can be set from Swift.
 
-class UserFeed(private val repository: UserRepository) {
+class UserFeed(private val loader: UserLoader) {
     val users: Flow<User> = flow {
-        for (user in repository.loadUsers()) {
+        for (user in loader.loadUsers()) {
             emit(user)
             delay(300)
         }

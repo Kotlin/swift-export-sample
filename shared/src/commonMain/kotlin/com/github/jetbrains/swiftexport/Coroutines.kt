@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 class User(val name: String, val age: Int)
 
-class UserRepository {
+class UserLoader {
     suspend fun loadUsers(): List<User> {
         delay(500)
         return listOf(User("John Doe", 30), User("Jane Doe", 25))
