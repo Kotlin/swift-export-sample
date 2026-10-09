@@ -36,6 +36,8 @@ kotlin {
     sourceSets.commonMain.dependencies {
         // implementation dependency: only the types used by the exported API are exported
         implementation(libs.kotlinx.coroutines.core)
+        // implementation dependency whose types leak into the exported API; hidden from Swift below
+        implementation(libs.koin.core)
         // api dependencies: exported as separate Swift modules
         api(projects.moduleA)
         api(projects.moduleB)
@@ -61,6 +63,9 @@ fun SwiftExportIntegration.reconfigureDependencies() {
         rootPackage = "com.github.jetbrains.modulec"
         visibility = SwiftExportVisibility.EXPOSED
     }
-    // :module-d is not exported: types that the :shared API mentions become empty stubs
+    // :module-d is not exported: types that the shared API mentions become empty stubs
     configure(projects.moduleD, SwiftExportVisibility.HIDDEN)
+    // Koin types leak into the exported API through HiddenDependency.kt: keep Koin out of
+    // the Swift API, generating only empty stubs for its types
+    configure(libs.koin.core, SwiftExportVisibility.HIDDEN)
 }
