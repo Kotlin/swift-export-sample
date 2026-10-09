@@ -73,3 +73,19 @@ suspend fun waitForever(onCancel: () -> Unit) {
         throw e
     }
 }
+
+// A running suspend loop is cancelled mid-delay; the flag survives for Swift to read
+class Countdown {
+    var wasCancelled: Boolean = false
+        private set
+
+    suspend fun run(from: Int): Int {
+        try {
+            for (i in from downTo 1) delay(1000)
+            return from
+        } catch (e: CancellationException) {
+            wasCancelled = true
+            throw e
+        }
+    }
+}

@@ -4,6 +4,8 @@ package com.github.jetbrains.swiftexport
 // type parameters become `(any _KotlinBridgeable)?` in Swift.
 class Box<T>(val value: T) {
     fun <R> map(transform: (T) -> R): Box<R> = Box(transform(value))
+
+    fun describe(): String = "Box($value)"
 }
 
 fun <T> boxOf(value: T): Box<T> = Box(value)

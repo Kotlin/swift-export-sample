@@ -22,11 +22,29 @@ class GermanGreeting : Greeting {
 
 fun greetings(): List<Greeting> = listOf(EnglishGreeting(), GermanGreeting())
 
-// Swift classes can implement Kotlin interfaces too. Such a class has to inherit
-// from an exported Kotlin class, because KotlinBase itself can't be instantiated (KT-88251).
-open class GreetingBase
-
 fun greetEveryone(greetings: List<Greeting>, name: String): List<String> = greetings.map { it.greet(name) }
+
+// Interfaces can also be implemented by Swift classes directly, and Kotlin calls
+// back into the Swift implementation
+interface Translator {
+    val language: String
+
+    fun translate(word: String): String
+
+    fun translateAll(words: List<String>): List<String> = words.map { translate(it) }
+}
+
+class PigLatinTranslator : Translator {
+    override val language: String = "Pig Latin"
+
+    override fun translate(word: String): String =
+        if (word.isEmpty()) word else word.drop(1) + word.first() + "ay"
+}
+
+fun defaultTranslator(): Translator = PigLatinTranslator()
+
+fun translateSentence(sentence: String, translator: Translator): String =
+    "[${translator.language}] " + translator.translateAll(sentence.split(" ")).joinToString(" ")
 
 // Functional interfaces become protocols, plus a `validator(function:)` factory
 // that turns a Swift closure into an implementation

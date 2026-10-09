@@ -33,6 +33,13 @@ fun oldApi(): String = "old"
 
 fun newApi(): String = "new"
 
+/** Returns the number of vowels in [text]. */
+fun vowelCount(text: String): Int = text.count { it.lowercaseChar() in "aeiou" }
+
+// With `DeprecationLevel.ERROR` the declaration is unavailable in Swift
+@Deprecated("Removed, use vowelCount(text)", level = DeprecationLevel.ERROR)
+fun vowels(text: String): Int = vowelCount(text)
+
 // Opt-in requirements become Swift SPI: Swift sees the declaration only with
 // `@_spi(ExperimentalSampleApi) import Shared`
 @RequiresOptIn(message = "This API is experimental", level = RequiresOptIn.Level.WARNING)

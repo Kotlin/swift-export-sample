@@ -1,11 +1,12 @@
 import Testing
 import Shared
+import KotlinRuntime
 
 // Swift implementation of a Kotlin interface, passed back to Kotlin
-final class FrenchGreeting: GreetingBase, Greeting {
-    var language: String { "French" }
+final class SwiftGreeting: KotlinBase, Greeting {
+    var language: String { "Swift" }
 
-    func greet(name: String) -> String { "Bonjour, \(name)!" }
+    func greet(name: String) -> String { "Hello from Swift, \(name)!" }
 }
 
 struct InterfacesTests {
@@ -19,10 +20,10 @@ struct InterfacesTests {
     }
 
     @Test func swiftImplementationsOfKotlinInterfaces() {
-        let all: [any Greeting] = greetings() + [FrenchGreeting()]
-        #expect(greetEveryone(greetings: all, name: "Kodee") == ["Hello, Kodee!", "Hallo, Kodee!", "Bonjour, Kodee!"])
+        let all: [any Greeting] = greetings() + [SwiftGreeting()]
+        #expect(greetEveryone(greetings: all, name: "Kodee") == ["Hello, Kodee!", "Hallo, Kodee!", "Hello from Swift, Kodee!"])
         // The Kotlin default implementation of greetAll calls the Swift greet
-        #expect(FrenchGreeting().greetAll(names: ["A"]) == ["Bonjour, A!"])
+        #expect(SwiftGreeting().greetAll(names: ["A"]) == ["Hello from Swift, A!"])
     }
 
     @Test func functionalInterfaces() {
