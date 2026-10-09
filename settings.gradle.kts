@@ -3,6 +3,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
     repositories {
+        maven("https://packages.jetbrains.team/maven/p/kt/experimental")
         maven("https://redirector.kotlinlang.org/maven/dev")
         gradlePluginPortal()
         mavenCentral()
@@ -11,6 +12,7 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
+        maven("https://packages.jetbrains.team/maven/p/kt/experimental")
         maven("https://redirector.kotlinlang.org/maven/dev")
         mavenCentral()
         ivy {
