@@ -1,8 +1,5 @@
 package com.github.jetbrains.swiftexport
 
-import com.github.jetbrains.modulea.ClassFromA
-import com.github.jetbrains.moduleb.ClassFromB
-
 // Final classes become `public final class ...: KotlinRuntime.KotlinBase`.
 class MyClass(val property: Int) {
     // Secondary constructors are separate Swift initializers
@@ -91,18 +88,4 @@ class Account(val owner: String) {
     fun deposit(amount: Long) {
         balance += amount
     }
-}
-
-// Types from other exported modules are referenced by their own Swift modules
-fun useClassFromA(): ClassFromA = ClassFromA("class_A")
-
-fun useClassFromB(): ClassFromB = ClassFromB("class_B")
-
-// :module-c is an `implementation` dependency, but exported fully because of `SwiftExportVisibility.EXPOSED`
-fun analytics(): com.github.jetbrains.modulec.Analytics = com.github.jetbrains.modulec.Analytics()
-
-// :module-d is hidden with `SwiftExportVisibility.HIDDEN`. Engine is an empty stub in Swift,
-// so Car can still inherit from it, but Engine's own members are not exported.
-class Car : com.github.jetbrains.moduled.Engine() {
-    fun drive(): String = "${start()}, driving"
 }
