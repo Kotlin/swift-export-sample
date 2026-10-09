@@ -2,7 +2,7 @@ import SwiftUI
 import Shared
 
 struct FlowsView: View {
-    private let feed = UserFeed(repository: UserRepository())
+    private let feed = UserFeed(loader: UserLoader())
     private let counter = ClickCounter()
     @State private var received: [User] = []
     @State private var clicks: Int32 = 0

@@ -2,7 +2,7 @@ import SwiftUI
 import Shared
 
 struct CoroutinesView: View {
-    private let repository = UserRepository()
+    private let loader = UserLoader()
     @State private var users: [User]?
     @State private var launched = "waiting…"
     @State private var countdown = Countdown()
@@ -15,8 +15,8 @@ struct CoroutinesView: View {
             summary: "`suspend fun loadUsers(): List<User>` is `func loadUsers() async throws -> [User]`. A `suspend () -> Unit` parameter is an async Swift closure. Cancelling the Swift Task cancels the Kotlin coroutine."
         ) {
             Section("suspend fun and suspend lambdas") {
-                DemoRow("try await repository.loadUsers()", users.map { $0.map(\.name).joined(separator: ", ") } ?? "loading…")
-                DemoRow("repository.launch { await … }", launched)
+                DemoRow("try await loader.loadUsers()", users.map { $0.map(\.name).joined(separator: ", ") } ?? "loading…")
+                DemoRow("loader.launch { await … }", launched)
             }
             Section("Cancellation") {
                 DemoRow("try await countdown.run(from: 5)", countdownStatus)
@@ -30,12 +30,12 @@ struct CoroutinesView: View {
             }
         }
         .task {
-            users = try? await repository.loadUsers()
+            users = try? await loader.loadUsers()
         }
         .onAppear {
             // No async context here, but the closure is async: it may await.
-            repository.launch {
-                let count = try await repository.loadUsers().count
+            loader.launch {
+                let count = try await loader.loadUsers().count
                 await MainActor.run { launched = "loaded \(count) users inside a Kotlin coroutine" }
             }
         }
