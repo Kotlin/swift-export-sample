@@ -12,9 +12,35 @@ Swift export is in [Beta](https://kotlinlang.org/docs/components-stability.html#
 
 The Gradle DSL is still marked with `@ExperimentalSwiftExportDsl`. Without `@OptIn(ExperimentalSwiftExportDsl::class)`, Gradle warns that the API is experimental, so the build scripts in this sample opt in.
 
+## Feature catalog
+
+The app opens on a list of features. Every feature has a Kotlin file in `shared/src/commonMain/kotlin/com/github/jetbrains/swiftexport/` and a screen in `appleApp/appleApp/Features/` with the same name. The Kotlin file starts with a short comment describing what the construct becomes in Swift.
+
+| Section | Feature | Kotlin | Swift screen | What it shows |
+|---|---|---|---|---|
+| Basics | Basics | `Basics.kt` | `BasicsView.swift` | Top-level functions and properties, primitive and unsigned types, nullability, overloads, `vararg` → variadic, `Any`, `@ObjCName(swiftName:)`, missing default arguments and the overload workaround |
+| | Extensions | `Extensions.kt` | `ExtensionsView.swift` | Extension functions and properties → Swift extensions, extensions on nullable types |
+| | Operators | `Operators.kt` | `OperatorsView.swift` | `+`, `*`, `<` from `compareTo`, subscripts from `get`, `~=` from `contains`, `callAsFunction` from `invoke`, `infix` |
+| | Annotations & docs | `Annotations.kt` | `AnnotationsView.swift` | KDoc → Swift documentation, `@Deprecated` → `@available` incl. `DeprecationLevel.ERROR` → unavailable, `@HiddenFromObjC`, `@RequiresOptIn` → SPI |
+| | Context parameters | `ContextParameters.kt` | `ContextParametersView.swift` | Context parameters as leading unlabeled Swift parameters |
+| Type hierarchy | Classes | `Classes.kt` | `ClassesView.swift` | Final classes, nested and inner classes, typealiases, open and abstract classes, Swift subclasses that override open members and call `super`, `object` → `.shared`, companion objects, data and value classes, private constructors |
+| | Interfaces | `Interfaces.kt` | `InterfacesView.swift` | Protocols, default methods, a Swift class implementing a Kotlin interface, `fun interface` |
+| | Enums | `Enums.kt` | `EnumsView.swift` | Native Swift enums, exhaustive `switch`, `allCases`, `rawValue` |
+| | Sealed types | `SealedTypes.kt` | `SealedTypesView.swift` | `sealedType()` → exhaustive `switch`, nested subclasses, `object` subclasses, sealed interfaces |
+| Types | Collections | `Collections.kt` | `CollectionsView.swift` | `List`/`Set`/`Map` → Swift collections, `IntRange` → `ClosedRange`, mutable collections, `ByteArray`, `StringBuilder` |
+| | Generics | `Generics.kt` | `GenericsView.swift` | Erased type parameters, generic classes and functions, Swift values passed as `Any` |
+| | Function types | `FunctionTypes.kt` | `FunctionTypesView.swift` | Function types ↔ Swift closures, passing a Swift-only API (CryptoKit) to Kotlin |
+| | Exceptions | `Exceptions.kt` | `ExceptionsView.swift` | `@Throws` → `throws`, catching Kotlin exceptions by type, exception payloads |
+| Concurrency | Coroutines | `Coroutines.kt` | `CoroutinesView.swift` | `suspend` → `async throws`, suspend lambdas, `Flow` → `AsyncSequence`, `StateFlow.value`, setting a `MutableStateFlow` from Swift, cancelling a Swift `Task` cancels the coroutine |
+| Modules | Modules | `Modules.kt`, `:module-a`, `:module-b`, `:module-c`, `:module-d` | `ModulesView.swift` | One Swift module per exported Kotlin module, library vs. consumer configuration, `EXPOSED` dependencies |
+| | Platform code | `Platform.kt`, `Platform.ios.kt`, `Platform.macos.kt` | `PlatformView.swift` | `iosMain`/`macosMain` code and `expect`/`actual` |
+| | Hiding a dependency | `HiddenDependency.kt` | `HiddenDependencyView.swift` | Koin leaked into the public API, and `:module-d`, both hidden with `SwiftExportVisibility.HIDDEN` |
+
+The catalog itself is `appleApp/appleApp/Catalog/FeatureCatalog.swift`; `DemoComponents.swift` next to it holds the shared row and screen views.
+
 ## Project structure
 
-- `:shared` - The umbrella module, exported as the `Shared` Swift module. `xcodeIntegration {}` connects it to Xcode, and `swiftPackageIntegration {}` exports it as a Swift package. It depends on `:module-a` and `:module-b` via `api`, so both become separate Swift modules.
+- `:shared` - The umbrella module, exported as the `Shared` Swift module. `xcodeIntegration {}` connects it to Xcode, and `swiftPackageIntegration {}` exports it as a Swift package. It depends on `:module-a` and `:module-b` via `api`, so both become separate Swift modules, and uses `kotlinx-coroutines` and Koin as `implementation` dependencies.
 - `:module-a` - A Kotlin library that describes its own Swift representation (`ModuleA`) in its build script. This is what a library author would do.
 - `:module-b` - A Kotlin library with no Swift export configuration at all. `:shared` decides how it appears in Swift (`ModuleB`). This is what a consumer does when a library says nothing about itself.
 - `:module-c` - An `implementation` dependency of `:shared`. By default, Swift would only get the types that the `Shared` API uses. `:shared` exports the whole module as `ModuleC` with `SwiftExportVisibility.EXPOSED`.
@@ -60,6 +86,7 @@ kotlin {
 
     sourceSets.commonMain.dependencies {
         implementation(libs.kotlinx.coroutines.core)
+        implementation(libs.koin.core)
         api(projects.moduleA)
         api(projects.moduleB)
         implementation(projects.moduleC)
@@ -82,6 +109,9 @@ fun SwiftExportIntegration.reconfigureDependencies() {
     }
     // :module-d is not exported: types that the :shared API mentions become empty stubs
     configure(projects.moduleD, SwiftExportVisibility.HIDDEN)
+    // Koin types leak into the exported API through HiddenDependency.kt: keep Koin out of
+    // the Swift API, generating only empty stubs for its types
+    configure(libs.koin.core, SwiftExportVisibility.HIDDEN)
 }
 ```
 
@@ -213,6 +243,43 @@ Some things don't map to Swift yet. The sample runs into these:
 - Mutable collections and arrays stay Kotlin types rather than Swift collections (`mutableNames()`). `compareTo` gives you `<` and `>`, but no `Comparable` conformance.
 - A Swift class that implements a Kotlin interface must inherit from an exported Kotlin class (`GreetingBase`), because `KotlinBase` can't be instantiated from Swift ([KT-88251](https://youtrack.jetbrains.com/issue/KT-88251)).
 - Swift names can clash with SDK names. SwiftUI also declares `Shape`, so `appleApp` writes `Shared.Shape`.
+
+## Hiding a dependency
+
+`:shared` uses Koin internally, but `HiddenDependency.kt` leaks it into the public API on purpose:
+
+```kotlin
+object AppGraph {
+    // Accidental leaks: public declarations that mention Koin types.
+    val koin: Koin by lazy { startKoin { modules(appModule) }.koin }
+    fun modules(): List<Module> = listOf(appModule)
+
+    // Swift-facing API: Koin stays an implementation detail.
+    fun greetingService(): GreetingService = koin.get()
+}
+```
+
+Koin is an `implementation` dependency, but Swift Export follows every type that appears in the exported API. Without any configuration, Koin is exported transitively as the `IoInsertKoinKoinCore` Swift module: about 1,800 lines of generated Swift with 40 types, plus a `KotlinStdlib` module with about 1,700 lines.
+
+`configure(libs.koin.core, SwiftExportVisibility.HIDDEN)` stops that:
+
+- Koin's types become empty stub classes (`Koin`, `Module`) with no members. `IoInsertKoinKoinCore.swift` shrinks to 23 lines, and `KotlinStdlib.swift` to about 240.
+- The leaked declarations still compile in Swift, but their bodies are `fatalError()`. The "Call AppGraph.shared.koin" button on the screen shows the crash.
+- Declarations that don't mention Koin, such as `greetingService()`, work normally.
+- The same visibility hides `:module-d`: its `Engine` becomes an empty stub, and `Shared.Car` can still inherit from it.
+
+HIDDEN is also the way out when a dependency's generated code doesn't compile. Hide the dependency, then make sure no Swift-facing declaration mentions its types.
+
+## Not supported or different from Objective-C export
+
+These are visible in the sample as workarounds, or not shown at all:
+
+- Default argument values are not exported. Swift passes every argument; add Kotlin overloads for common cases (`formatPrice` in `Basics.kt`).
+- Generics are erased, so values of type parameters must be cast in Swift. A bare Swift integer literal passed as `Any` arrives in Kotlin as `Double`; use `Int32(7)`.
+- `protected` members, `inline` functions with `reified` type parameters, and companion blocks/static extensions are not exported.
+- Mutable collections are not converted to Swift collections; keep read-only `List`, `Set` and `Map` in Swift-facing signatures.
+- Abstract members that a Swift subclass doesn't override compile, but trap at runtime.
+- An exception thrown from a function without `@Throws` terminates the app.
 
 ## Getting started
 
