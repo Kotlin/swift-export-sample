@@ -9,7 +9,7 @@ struct FeatureScreen<Content: View>: View {
     var body: some View {
         List {
             Section {
-                Text(summary)
+                Text(LocalizedStringKey(summary))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -32,6 +32,10 @@ struct DemoRow: View {
 
     init(_ code: String, _ result: some CustomStringConvertible) {
         self.init(code, result.description)
+    }
+
+    init(_ code: String, _ result: (some CustomStringConvertible)?) {
+        self.init(code, result?.description ?? "nil")
     }
 
     var body: some View {
