@@ -25,6 +25,7 @@ struct FeatureCatalog: View {
                     FeatureLink("Types & nullability", "Int32, unsigned, Char, optionals, Unit, Nothing") { TypesView() }
                     FeatureLink("Collections", "List, Set, Map, ranges → Swift types") { CollectionsView() }
                     FeatureLink("Generics", "erased type parameters, Swift values as Any") { GenericsView() }
+                    FeatureLink("Generic wrappers", "ScreenState<T> → non-generic ProfileState") { GenericWrappersView() }
                     FeatureLink("Closures", "function types ↔ Swift closures") { ClosuresView() }
                     FeatureLink("Exceptions", "@Throws → throws, catching Kotlin exceptions") { ExceptionsView() }
                 }
