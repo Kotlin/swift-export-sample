@@ -29,6 +29,7 @@ The app opens on a list of features. Every feature has a Kotlin file in `shared/
 | | Sealed types | `SealedTypes.kt` | `SealedTypesView.swift` | `sealedType()` → exhaustive `switch`, nested subclasses, `object` subclasses, sealed interfaces |
 | Types | Collections | `Collections.kt` | `CollectionsView.swift` | `List`/`Set`/`Map` → Swift collections, `IntRange` → `ClosedRange`, mutable collections, `ByteArray`, `StringBuilder` |
 | | Generics | `Generics.kt` | `GenericsView.swift` | Erased type parameters, generic classes and functions, Swift values passed as `Any` |
+| | Generic wrappers | `GenericWrappers.kt` | `GenericWrappersView.swift` | A generic `ScreenState<T>` (Loading / Ready / Error) next to a non-generic `ProfileState` wrapper: typed payloads instead of casts, and an API that is exported at all |
 | | Function types | `FunctionTypes.kt` | `FunctionTypesView.swift` | Function types ↔ Swift closures, passing a Swift-only API (CryptoKit) to Kotlin |
 | | Exceptions | `Exceptions.kt` | `ExceptionsView.swift` | `@Throws` → `throws`, catching Kotlin exceptions by type, exception payloads |
 | Concurrency | Coroutines | `Coroutines.kt` | `CoroutinesView.swift` | `suspend` → `async throws`, suspend lambdas, `Flow` → `AsyncSequence`, `StateFlow.value`, setting a `MutableStateFlow` from Swift, cancelling a Swift `Task` cancels the coroutine |
@@ -276,7 +277,7 @@ HIDDEN is also the way out when a dependency's generated code doesn't compile. H
 These are visible in the sample as workarounds, or not shown at all:
 
 - Default argument values are not exported. Swift passes every argument; add Kotlin overloads for common cases (`formatPrice` in `Basics.kt`).
-- Generics are erased, so values of type parameters must be cast in Swift. A bare Swift integer literal passed as `Any` arrives in Kotlin as `Double`; use `Int32(7)`.
+- Generics are erased, so values of type parameters must be cast in Swift, and functions that take a generic class with a concrete type argument (`ScreenState<Profile>`) are not exported. Wrap generic classes in non-generic ones for the Swift-facing API (`GenericWrappers.kt`). A bare Swift integer literal passed as `Any` arrives in Kotlin as `Double`; use `Int32(7)`.
 - `protected` members, `inline` functions with `reified` type parameters, and companion blocks/static extensions are not exported.
 - Mutable collections are not converted to Swift collections; keep read-only `List`, `Set` and `Map` in Swift-facing signatures.
 - Abstract members that a Swift subclass doesn't override compile, but trap at runtime.
