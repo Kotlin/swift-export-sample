@@ -54,11 +54,15 @@ The catalog itself is `appleApp/appleApp/Catalog/FeatureCatalog.swift`; `DemoCom
 
 ## Swift export configuration
 
-Swift export is configured in `build.gradle.kts` through the `export.swift {}` block inside the `kotlin {}` extension. The legacy `swiftExport {}` block is deprecated in Kotlin 2.5.0 and reports a diagnostic pointing to the new DSL.
+Swift export is configured in each module's `build.gradle.kts` through the `export.swift {}` block inside the `kotlin {}` extension. The legacy `swiftExport {}` block is deprecated in Kotlin 2.5.0 and reports a diagnostic pointing to the new DSL.
 
 ### Umbrella module (`:shared`)
 
 ```kotlin
+import org.jetbrains.kotlin.gradle.plugin.mpp.export.SwiftExportIntegration
+import org.jetbrains.kotlin.gradle.plugin.mpp.export.SwiftExportVisibility
+import org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl
+
 kotlin {
     iosArm64()
     iosSimulatorArm64()
@@ -122,6 +126,8 @@ Overrides are configured per integration. Both integrations need the same ones h
 ### Library module (`:module-a`)
 
 ```kotlin
+import org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl
+
 kotlin {
     iosArm64()
     iosSimulatorArm64()
@@ -149,7 +155,7 @@ If `moduleName` is not set, it is derived from the Gradle project name with the 
 
 `rootPackage` is the old `flattenPackage` under a new name. Kotlin code normally lives in packages such as `com.github.jetbrains.modulea`. With `rootPackage` set, that prefix is dropped and the classes can be used from Swift directly.
 
-The biggest change is that there is no `export(...)` list anymore. The dependency graph decides what gets exported. The full public API of each direct `api` dependency of the umbrella module is exported as a separate Swift module. Other dependencies, `implementation` and transitive ones alike, also get Swift modules, but those only contain the declarations that the exported API refers to.
+The biggest change is that there is no `export(...)` list anymore. The dependency graph decides what gets exported. The full public API of each direct `api` dependency of the umbrella module is exported as a separate Swift module. Other dependencies, `implementation` and transitive ones alike, also get Swift modules, but those only contain the declarations that the exported API refers to. In this sample that is `OrgJetbrainsKotlinxKotlinxCoroutinesCore` and `KotlinStdlib`, and Koin's `IoInsertKoinKoinCore` until it is hidden.
 
 A library configures its Swift representation once, the way `:module-a` does. When `moduleName` or `rootPackage` is set, the Kotlin Gradle plugin publishes them as a small metadata file next to the library, and consumers pick it up automatically. No integration block is needed for that. This works for project dependencies and for published external dependencies, so a consumer no longer repeats `moduleName` and `rootPackage` for every library it exports.
 
@@ -269,6 +275,7 @@ Koin is an `implementation` dependency, but Swift Export follows every type that
 - The leaked declarations still compile in Swift, but their bodies are `fatalError()`. The "Call AppGraph.shared.koin" button on the screen shows the crash.
 - Declarations that don't mention Koin, such as `greetingService()`, work normally.
 - The same visibility hides `:module-d`: its `Engine` becomes an empty stub, and `Shared.Car` can still inherit from it.
+- The Swift Export part of the build gets faster: `./gradlew :shared:embedSwiftExportForXcode` with all Swift Export outputs deleted took a median of 10.3 s without HIDDEN and 9.3 s with it (5 runs each, Apple M5 Max). Most of the saving is in generating, compiling and linking less code.
 
 HIDDEN is also the way out when a dependency's generated code doesn't compile. Hide the dependency, then make sure no Swift-facing declaration mentions its types.
 
@@ -278,8 +285,8 @@ These are visible in the sample as workarounds, or not shown at all:
 
 - Default argument values are not exported. Swift passes every argument; add Kotlin overloads for common cases (`formatPrice` in `Basics.kt`).
 - Generics are erased, so values of type parameters must be cast in Swift, and functions that take a generic class with a concrete type argument (`ScreenState<Profile>`) are not exported. Wrap generic classes in non-generic ones for the Swift-facing API (`GenericWrappers.kt`). A bare Swift integer literal passed as `Any` arrives in Kotlin as `Double`; use `Int32(7)`.
-- `protected` members, `inline` functions with `reified` type parameters, and companion blocks/static extensions are not exported.
-- Mutable collections are not converted to Swift collections; keep read-only `List`, `Set` and `Map` in Swift-facing signatures.
+- `protected` members and `inline` functions with `reified` type parameters are not exported.
+- Mutable collections are not converted to Swift collections: a returned `MutableList` is an opaque `any kotlin.collections.MutableList`. Keep read-only `List`, `Set` and `Map` in Swift-facing signatures.
 - Abstract members that a Swift subclass doesn't override compile, but trap at runtime.
 - An exception thrown from a function without `@Throws` terminates the app.
 
