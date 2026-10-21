@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.export.SwiftExportIntegration
 import org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl
 
 plugins {
@@ -16,15 +17,14 @@ kotlin {
             // Collapse rule
             rootPackage = "com.github.jetbrains.swiftexport"
 
-            // Register :embedSwiftExportForXcode task
+            // Register :shared:embedSwiftExportForXcode task
             xcodeIntegration {
-                // Explicitly reconfigure exported module
-                configure(projects.moduleB) {
-                    // Exported module name
-                    moduleName = "ModuleB"
-                    // Collapse exported dependency rule
-                    rootPackage = "com.github.jetbrains.moduleb"
-                }
+                reconfigurePackages()
+            }
+
+            // Register :shared:exportDebugSwiftPackage and :shared:exportReleaseSwiftPackage tasks
+            swiftPackageIntegration {
+                reconfigurePackages()
             }
         }
     }
@@ -36,3 +36,13 @@ kotlin {
     }
 }
 
+@OptIn(ExperimentalSwiftExportDsl::class)
+fun SwiftExportIntegration.reconfigurePackages() {
+    // Explicitly reconfigure exported module
+    configure(projects.moduleB) {
+        // Exported module name
+        moduleName = "ModuleB"
+        // Collapse exported dependency rule
+        rootPackage = "com.github.jetbrains.moduleb"
+    }
+}
