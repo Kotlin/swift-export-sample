@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.export.SwiftExportIntegration
+import org.jetbrains.kotlin.gradle.plugin.mpp.export.SwiftExportVisibility
 import org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl
 
 plugins {
@@ -8,6 +9,7 @@ plugins {
 kotlin {
     iosArm64()
     iosSimulatorArm64()
+    macosArm64()
 
     export {
         @OptIn(ExperimentalSwiftExportDsl::class)
@@ -19,30 +21,42 @@ kotlin {
 
             // Register :shared:embedSwiftExportForXcode task
             xcodeIntegration {
-                reconfigurePackages()
+                reconfigureDependencies()
             }
 
             // Register :shared:exportDebugSwiftPackage and :shared:exportReleaseSwiftPackage tasks
             swiftPackageIntegration {
-                reconfigurePackages()
+                reconfigureDependencies()
+                // Default is "SwiftPackage" next to this build script
+                outputDirectory = layout.projectDirectory.dir("SwiftPackage")
             }
         }
     }
 
     sourceSets.commonMain.dependencies {
+        // implementation dependency: only the types used by the exported API are exported
         implementation(libs.kotlinx.coroutines.core)
+        // api dependencies: exported as separate Swift modules
         api(projects.moduleA)
         api(projects.moduleB)
+        // implementation dependency, forced to be exported as a separate Swift module
+        implementation(projects.moduleC)
     }
 }
 
 @OptIn(ExperimentalSwiftExportDsl::class)
-fun SwiftExportIntegration.reconfigurePackages() {
-    // Explicitly reconfigure exported module
+fun SwiftExportIntegration.reconfigureDependencies() {
+    // :module-b publishes no Swift Export configuration, so the consumer names it
     configure(projects.moduleB) {
         // Exported module name
         moduleName = "ModuleB"
         // Collapse exported dependency rule
         rootPackage = "com.github.jetbrains.moduleb"
+    }
+    // :module-c is an implementation dependency, which would be exported only partially by default
+    configure(projects.moduleC) {
+        moduleName = "ModuleC"
+        rootPackage = "com.github.jetbrains.modulec"
+        visibility = SwiftExportVisibility.EXPOSED
     }
 }

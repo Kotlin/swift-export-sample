@@ -26,3 +26,4 @@ dependencyResolutionManagement {
 include(":shared")
 include(":module-a")
 include(":module-b")
+include(":module-c")

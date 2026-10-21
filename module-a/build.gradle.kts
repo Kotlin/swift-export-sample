@@ -9,6 +9,7 @@ version = "1.0.5"
 kotlin {
     iosArm64()
     iosSimulatorArm64()
+    macosArm64()
 
     export {
         @OptIn(ExperimentalSwiftExportDsl::class)
