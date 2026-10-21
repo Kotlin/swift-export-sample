@@ -2,7 +2,9 @@
 
 # Kotlin Swift Export Sample
 
-This project demonstrates how to export Kotlin code as native Swift modules using JetBrains' Kotlin Multiplatform. The sample consists of three modules: `:shared`, `:module-a`, and `:module-b`, showcasing how to configure the new Swift Export DSL introduced in Kotlin 2.5.0 to export these Kotlin modules into Swift with custom configurations.
+This project shows how to export Kotlin Multiplatform code to Swift with Swift Export. It uses the `export.swift {}` DSL and the Swift package export added in Kotlin 2.5.0, exports several Gradle modules, and shows what each Kotlin language feature looks like on the Swift side.
+
+The Kotlin code has two consumers. An iOS app gets it through the Xcode integration, and a plain Swift package depends on the exported Swift package.
 
 ## ⚠️ Experimental feature notice
 
@@ -10,9 +12,14 @@ This project demonstrates how to export Kotlin code as native Swift modules usin
 
 ## Project structure
 
-- `:shared` - The umbrella module. It is exported as the `Shared` Swift module and is the only module wired into Xcode. It depends on `:module-a` and `:module-b` via `api`, so both end up as separate Swift modules.
+- `:shared` - The umbrella module, exported as the `Shared` Swift module. `xcodeIntegration {}` connects it to Xcode, and `swiftPackageIntegration {}` exports it as a Swift package. It depends on `:module-a` and `:module-b` via `api`, so both become separate Swift modules.
 - `:module-a` - A Kotlin library that describes its own Swift representation (`ModuleA`) in its build script. This is what a library author would do.
 - `:module-b` - A Kotlin library with no Swift Export configuration at all. `:shared` decides how it appears in Swift (`ModuleB`). This is what a consumer does when a library says nothing about itself.
+- `:module-c` - An `implementation` dependency of `:shared`. By default, Swift would only get the types that the `Shared` API uses. `:shared` exports the whole module as `ModuleC` with `SwiftExportVisibility.EXPOSED`.
+- `iosApp` - A SwiftUI app. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app's only screen lists the features with live results.
+- `spm-consumer` - A plain Swift package that depends on the package produced by `:shared:exportDebugSwiftPackage`. It has a small executable and the language feature tests, which run on macOS with `swift test`.
+
+`kotlinx-coroutines-core` is a plain `implementation` dependency of `:shared` and shows the default behavior. It gets its own `OrgJetbrainsKotlinxKotlinxCoroutinesCore` Swift module, which contains only the declarations the `Shared` API refers to, such as `Flow`.
 
 ## Swift Export configuration
 
@@ -24,6 +31,7 @@ Swift Export is configured in `build.gradle.kts` through the `export.swift {}` b
 kotlin {
     iosArm64()
     iosSimulatorArm64()
+    macosArm64()
 
     export {
         @OptIn(ExperimentalSwiftExportDsl::class)
@@ -33,15 +41,16 @@ kotlin {
             // Collapse rule
             rootPackage = "com.github.jetbrains.swiftexport"
 
-            // Register :embedSwiftExportForXcode task
+            // Register :shared:embedSwiftExportForXcode task
             xcodeIntegration {
-                // Explicitly reconfigure exported module
-                configure(projects.moduleB) {
-                    // Exported module name
-                    moduleName = "ModuleB"
-                    // Collapse exported dependency rule
-                    rootPackage = "com.github.jetbrains.moduleb"
-                }
+                reconfigureDependencies()
+            }
+
+            // Register :shared:exportDebugSwiftPackage and :shared:exportReleaseSwiftPackage tasks
+            swiftPackageIntegration {
+                reconfigureDependencies()
+                // Default is "SwiftPackage" next to this build script
+                outputDirectory = layout.projectDirectory.dir("SwiftPackage")
             }
         }
     }
@@ -50,9 +59,27 @@ kotlin {
         implementation(libs.kotlinx.coroutines.core)
         api(projects.moduleA)
         api(projects.moduleB)
+        implementation(projects.moduleC)
+    }
+}
+
+@OptIn(ExperimentalSwiftExportDsl::class)
+fun SwiftExportIntegration.reconfigureDependencies() {
+    // :module-b publishes no Swift Export configuration, so the consumer names it
+    configure(projects.moduleB) {
+        moduleName = "ModuleB"
+        rootPackage = "com.github.jetbrains.moduleb"
+    }
+    // :module-c is an implementation dependency, which would be exported only partially by default
+    configure(projects.moduleC) {
+        moduleName = "ModuleC"
+        rootPackage = "com.github.jetbrains.modulec"
+        visibility = SwiftExportVisibility.EXPOSED
     }
 }
 ```
+
+Overrides are configured per integration. Both integrations need the same ones here, so they live in one function that both blocks call.
 
 ### Library module (`:module-a`)
 
@@ -60,6 +87,7 @@ kotlin {
 kotlin {
     iosArm64()
     iosSimulatorArm64()
+    macosArm64()
 
     export {
         @OptIn(ExperimentalSwiftExportDsl::class)
@@ -73,21 +101,28 @@ kotlin {
 }
 ```
 
-`:module-b` has no Swift Export configuration at all. Its module name and root package come from the `configure(projects.moduleB) { ... }` override in `:shared`.
+`:module-b` and `:module-c` have no Swift Export configuration at all. Their module names and root packages come from the `configure(...)` overrides in `:shared`.
 
 ## How the new DSL works
 
-Everything starts with `export.swift {}`. It replaces the old `swiftExport {}` block and takes two properties for the current module: `moduleName` and `rootPackage`. Configuring it does not register any tasks on its own.
+Everything starts with `export.swift {}`. It replaces the old `swiftExport {}` block and takes two properties for the current module: `moduleName` and `rootPackage`. On its own, it doesn't register any build tasks for Xcode or Swift packages.
+
+If `moduleName` is not set, it is derived from the Gradle project name with the dashes removed and CamelCase applied, so `module-b` becomes `ModuleB`. `:shared` still sets the names of `:module-b` and `:module-c` explicitly, so you can see them in the build script.
 
 `rootPackage` is the old `flattenPackage` under a new name. Kotlin code normally lives in packages such as `com.github.jetbrains.modulea`. With `rootPackage` set, that prefix is dropped and the classes can be used from Swift directly.
 
-The biggest change is that there is no `export(...)` list anymore. What gets exported follows from the dependency graph. Direct `api` dependencies of the umbrella module become their own Swift modules. Everything else, including `implementation` dependencies and transitive ones, stays available to the exported API but is not exposed as a separate module.
+The biggest change is that there is no `export(...)` list anymore. The dependency graph decides what gets exported. The full public API of each direct `api` dependency of the umbrella module is exported as a separate Swift module. Other dependencies, `implementation` and transitive ones alike, also get Swift modules, but those only contain the declarations that the exported API refers to.
 
-A library configures its Swift representation once, the way `:module-a` does. The Kotlin Gradle plugin publishes that configuration as metadata next to the library, and consumers pick it up automatically. This works for project dependencies and for published external dependencies, so a consumer no longer repeats `moduleName` and `rootPackage` for every library it exports.
+A library configures its Swift representation once, the way `:module-a` does. When `moduleName` or `rootPackage` is set, the Kotlin Gradle plugin publishes them as a small metadata file next to the library, and consumers pick it up automatically. No integration block is needed for that. This works for project dependencies and for published external dependencies, so a consumer no longer repeats `moduleName` and `rootPackage` for every library it exports.
 
-`xcodeIntegration {}` opts a module into Xcode and registers the `embedSwiftExportForXcode` task. Only `:shared` calls it. Inside the block, `settings.put(...)` passes extra settings to the export pipeline, and `configure(dependency) { ... }` reconfigures any exported dependency, whether it is a project, a Maven coordinate, or a version catalog entry. A consumer override wins over the library's published metadata, which in turn wins over the derived default. `:shared` uses this to name `:module-b`, since that library has no metadata of its own.
+`xcodeIntegration {}` opts a module into Xcode and registers the `embedSwiftExportForXcode` task. `swiftPackageIntegration {}` registers the Swift package export tasks described below. Only `:shared` calls them. Inside each block, `configure(dependency) { ... }` reconfigures an exported dependency, given as a project, a Maven coordinate, or a version catalog entry. A consumer override wins over the library's published metadata, and the metadata wins over the derived default. `:shared` uses this to set the root package of `:module-b`, which has no metadata of its own. Overrides are not published. They only apply to the module that declares them. An override for a dependency that isn't part of the export, or two modules ending up with the same Swift name, fails the build with a diagnostic.
 
-The same `configure` block also accepts a `visibility`. `SwiftExportVisibility.EXPOSED` forces a dependency to be fully exported even if it is not an `api` dependency, and `SwiftExportVisibility.HIDDEN` does the opposite. There is a shorthand, `configure(dependency, SwiftExportVisibility.HIDDEN)`. This sample does not use either.
+The same `configure` block also accepts a `visibility`:
+
+- `SwiftExportVisibility.EXPOSED` exports the full API of a dependency, as if it were an `api` dependency. The dependency can stay `implementation`, so other Gradle consumers of `:shared` don't see it. `:shared` does this with `:module-c`.
+- `SwiftExportVisibility.HIDDEN` removes a dependency from the Swift API, even if it is an `api` dependency. Only empty stubs remain for the types that other modules mention.
+
+The shorthand is `configure(dependency, SwiftExportVisibility.HIDDEN)`. Visibility applies to that one library, not to its dependencies.
 
 ### Migrating from the legacy DSL
 
@@ -96,18 +131,95 @@ The same `configure` block also accepts a `visibility`. `SwiftExportVisibility.E
 | `swiftExport { ... }` | `export { swift { ... } }` |
 | `flattenPackage = "..."` | `rootPackage = "..."` |
 | `export(project(":module-a")) { ... }` | Declare `api(projects.moduleA)`; the library configures itself, or the consumer overrides it via `xcodeIntegration { configure(projects.moduleA) { ... } }` |
-| `embedSwiftExportForXcode` registered implicitly | Registered only when `xcodeIntegration()` is called |
+| `embedSwiftExportForXcode` registered implicitly | Registered when `xcodeIntegration()` is called |
+
+## Swift package export
+
+`swiftPackageIntegration {}` registers one export task per build type:
+
+| Task | Output |
+|---|---|
+| `:shared:exportDebugSwiftPackage` | `shared/SwiftPackage/Debug` |
+| `:shared:exportReleaseSwiftPackage` | `shared/SwiftPackage/Release` |
+
+The package has a `Package.swift`, the generated Swift sources of every exported module, and the compiled Kotlin code in `SharedKotlin.xcframework`. The XCFramework has a slice per platform, here `ios-arm64`, `ios-arm64-simulator` and `macos-arm64`. All modules are available through one `SharedLibrary` product. The generated code needs iOS 18 or macOS 15 at minimum.
+
+If the API differs between targets, the generated sources use `#if os(...)` branches. In this sample, `iosMain` and `macosMain` declare different `platformName()` implementations, and `iosBar()` exists on iOS only.
+
+Add `outputDirectory/Debug` or `outputDirectory/Release` as a local package, not `outputDirectory` itself. `spm-consumer/Package.swift` does it like this:
+
+```swift
+dependencies: [
+    .package(name: "Shared", path: "../shared/SwiftPackage/Debug"),
+],
+targets: [
+    .executableTarget(
+        name: "SpmConsumer",
+        dependencies: [.product(name: "SharedLibrary", package: "Shared")]
+    ),
+]
+```
+
+In Xcode, use **File > Add Package Dependencies… > Add Local…**, select `shared/SwiftPackage/Debug`, and link `SharedLibrary`.
+
+In Kotlin 2.5.0, you can't combine Swift package export with `swiftPMDependencies {}`. Support for this combination is planned for Kotlin 2.5.20.
+
+To use a Swift-only API from Kotlin, declare a function type in Kotlin and let Swift provide the implementation as a closure. `FunctionTypes.kt` declares an MD5 hasher this way, and the Swift side implements it with CryptoKit.
+
+## Language features
+
+The Kotlin API of `:shared` is split into one file per topic. Comments in each file say what the declarations turn into in Swift. The tests in `spm-consumer/Tests/SwiftExportTests` call them from Swift.
+
+| Kotlin source | Swift tests | Covers |
+|---|---|---|
+| `Basics.kt` | `BasicsTests.swift` | Top-level functions and properties, `const val`, primitive and unsigned types, `Char`, nullability, overloads, `vararg`, `Any`, `Unit`, `Nothing` |
+| `Classes.kt` | `ClassesTests.swift` | Classes, secondary constructors, nested and inner classes, type aliases, open and abstract classes, Swift subclasses of Kotlin classes, objects, companion objects, data classes, value classes, property visibility, `lateinit` |
+| `Interfaces.kt` | `InterfacesTests.swift` | Interfaces as Swift protocols, default methods, `fun interface` |
+| `SealedTypes.kt`, `Enums.kt` | `SealedAndEnumTests.swift` | Sealed classes and interfaces with exhaustive `switch` over `sealedType()`, enum classes as native Swift enums |
+| `Generics.kt` | `TypesTests.swift` | Generic classes and functions (type-erased) |
+| `Collections.kt` | `TypesTests.swift` | `List`, `Set` and `Map` as Swift collections, ranges, mutable collections |
+| `Operators.kt` | `TypesTests.swift` | Arithmetic and comparison operators, subscripts, `contains`, `invoke` as `callAsFunction`, `infix` |
+| `Extensions.kt` | `TypesTests.swift` | Extension functions and properties on Kotlin and Swift types, on nullable types |
+| `FunctionTypes.kt` | `TypesTests.swift` | Function types as Swift closures, Swift implementations of Kotlin-declared dependencies |
+| `Coroutines.kt` | `CoroutinesTests.swift` | `suspend` functions as `async`, `Flow` as `AsyncSequence`, `StateFlow.value`, suspend function types, cancellation |
+| `Exceptions.kt` | `ExceptionsTests.swift` | `@Throws` functions and constructors as Swift `throws` |
+| `Annotations.kt` | `ClassesTests.swift` (`@ObjCName` only) | KDoc as Swift documentation comments, `@ObjCName`, `@HiddenFromObjC`, `@Deprecated` as `@available(*, deprecated)` |
+| `nested/NestedPackage.kt` | `BasicsTests.swift` | Packages outside of `rootPackage` as Swift namespaces |
+| `iosMain`, `macosMain` | `iosApp/Tests/Tests.swift`, `ModulesTests.swift` | Platform-specific API, UIKit and Foundation types |
+
+### Known limitations
+
+Some things don't map to Swift yet. The sample runs into these:
+
+- Default argument values are not exported, so Swift callers pass every argument (`formatPrice`).
+- Generics are erased. Type parameters become `(any KotlinRuntimeSupport._KotlinBridgeable)?`, so Swift has to cast values (`Box`).
+- Data classes get `copy`, but no `componentN` functions. `==`, `hashValue` and `description` come from `NSObject`, which Kotlin wires to `equals`, `hashCode` and `toString`.
+- Mutable collections and arrays stay Kotlin types rather than Swift collections (`mutableNames()`). `compareTo` gives you `<` and `>`, but no `Comparable` conformance.
+- Swift names can clash with SDK names. SwiftUI also declares `Shape`, so `iosApp` writes `Shared.Shape`.
 
 ## Getting started
 
-### Running the project
+### Running the iOS app
+
+You need Xcode 16 or later (for the iOS 18 SDK) and a JDK. CI uses JDK 21.
 
 1. Clone this repository.
-2. Open the project `iosApp/iosApp.xcodeproj` with Xcode (tested with version 16.0).
-3. Ensure you have the following command in your Run Script build phase: `./gradlew :shared:embedSwiftExportForXcode`.
-4. Build the project. The Swift modules will be generated and can be found in the build output directory.
+2. Open `iosApp/iosApp.xcodeproj` in Xcode.
+3. Build and run the `iosApp` scheme. The Run Script build phase calls `./gradlew :shared:embedSwiftExportForXcode`, so there is nothing to build by hand first.
+4. Run the tests with **Product > Test**.
+
+### Consuming the Swift package
+
+Export the package first, then build and test the consumer:
+
+```shell
+./gradlew :shared:exportDebugSwiftPackage
+swift run --package-path spm-consumer
+swift test --package-path spm-consumer
+```
 
 ## Learn more
 
 - [Interoperability with Swift using Swift export](https://kotlinlang.org/docs/native-swift-export.html)
-- For more information on Kotlin Multiplatform, check out the [Kotlin Multiplatform Documentation](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html).
+- [Moving from SKIE to Swift export in a Kotlin Multiplatform project](https://johnoreilly.dev/posts/peopleinspace-swift-export/) by John O'Reilly
+- [Kotlin Multiplatform documentation](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)
