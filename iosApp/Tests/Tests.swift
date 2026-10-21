@@ -1,61 +1,60 @@
-//
-//  swift_export_sampleTests.swift
-//  swift-export-sampleTests
-//
-//  Created by Andrey.Yastrebov on 29.02.24.
-//  Copyright © 2024 orgName. All rights reserved.
-//
-
 import XCTest
 @testable import Shared
 @testable import ModuleA
 @testable import ModuleB
+@testable import ModuleC
+
+// The full set of language feature tests lives in spm-consumer/Tests and runs with `swift test`.
+// These tests check the modules embedded into the app by `embedSwiftExportForXcode`.
 
 final class SharedTests: XCTestCase {
 
     func testSharedFunction() {
-        let result = sharedFunction()
-        XCTAssertEqual(result, 15, "sharedFunction() should return the expected result")
+        XCTAssertEqual(sharedFunction(), 15)
     }
 
-    func testClassFromA() {
-        let result = useClassFromA()
-        XCTAssertEqual(result.hello(), "Hello from class_A", "useClassFromA() should return the expected result")
+    func testIosSpecificApi() {
+        XCTAssertEqual(iosBar(), 125)
+        XCTAssertTrue(platformName().hasPrefix(UIDevice.current.systemName))
+        XCTAssertEqual(currentDevice().model, UIDevice.current.model)
     }
 
-    func testClassFromB() {
-        let result = useClassFromB()
-        XCTAssertEqual(result.hello(), "Hello from class_B", "useClassFromB() should return the expected result for the given parameter")
-    }
-
-    func testBar() {
-        let result = iosBar()
-        XCTAssertEqual(result, 125, "iosBar() should return the expected result for the given parameter")
+    func testSuspendFunction() async throws {
+        let users = try await UsersViewModel().loadUsers()
+        XCTAssertEqual(users.map(\.name), ["John Doe", "Jane Doe"])
     }
 }
 
 final class ModuleATests: XCTestCase {
 
     func testModuleAClass() {
-        let instance = ClassFromA(name: "A")
-        XCTAssertEqual(instance.hello(), "Hello from A", "hello() should return the expected result")
+        XCTAssertEqual(ClassFromA(name: "A").hello(), "Hello from A")
+        XCTAssertEqual(useClassFromA().hello(), "Hello from class_A")
     }
 
-    func testBar() {
-        let result = iosModuleABar()
-        XCTAssertEqual(result, 54321, "iosModuleABar() should return the expected result for the given parameter")
+    func testIosSpecificApi() {
+        XCTAssertEqual(iosModuleABar(), 54321)
     }
 }
 
 final class ModuleBTests: XCTestCase {
 
     func testModuleBClass() {
-        let instance = ClassFromB(name: "B")
-        XCTAssertEqual(instance.hello(), "Hello from B", "hello() should return the expected result")
+        XCTAssertEqual(ClassFromB(name: "B").hello(), "Hello from B")
+        XCTAssertEqual(useClassFromB().hello(), "Hello from class_B")
     }
 
-    func testBar() {
-        let result = iosModuleBBar()
-        XCTAssertEqual(result, 12345, "iosModuleBBar() should return the expected result for the given parameter")
+    func testIosSpecificApi() {
+        XCTAssertEqual(iosModuleBBar(), 12345)
+    }
+}
+
+final class ModuleCTests: XCTestCase {
+
+    func testExposedImplementationDependency() {
+        XCTAssertEqual(moduleCFunction(), 7)
+        let tracker = analytics()
+        tracker.track(event: Event(name: "test", properties: [:]))
+        XCTAssertEqual(tracker.trackedEvents().map(\.name), ["test"])
     }
 }
