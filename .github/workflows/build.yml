@@ -26,9 +26,14 @@ jobs:
 
       - name: Test on iOS simulator
         run: |
-          # Use the first iOS simulator that this Xcode accepts for the scheme
+          # Use the first iOS simulator that this Xcode accepts for the scheme.
+          # Ineligible destinations are listed with an "error:" field.
           SIMULATOR_ID=$(xcodebuild -project appleApp/appleApp.xcodeproj -scheme appleApp -showdestinations \
-            | grep "platform:iOS Simulator" | grep -v placeholder | head -1 | sed -E 's/.*id:([^,]+),.*/\1/')
+            | grep "platform:iOS Simulator" | grep -v -e placeholder -e "error:" | head -1 | sed -E 's/.*id:([^,]+),.*/\1/')
+          if [ -z "$SIMULATOR_ID" ]; then
+            echo "::error::No available iOS simulator for the appleApp scheme"
+            exit 1
+          fi
           xcodebuild test \
           -project appleApp/appleApp.xcodeproj \
           -scheme appleApp \

@@ -46,9 +46,6 @@ struct ModulesSection: View {
 // MARK: - Classes
 
 struct ClassesSection: View {
-    // Kotlin objects are not observable, so the view keeps its own copy of the counter
-    @State private var counter = Counter.shared.value
-
     var body: some View {
         Section("Classes") {
             let myClass = MyClass(property: 5)
@@ -58,12 +55,7 @@ struct ClassesSection: View {
             let area = totalArea(shapes: [Square(side: 2), SwiftCircle(radius: 1)])
             Row("Inheritance", "total area = \(area.formatted(.number.precision(.fractionLength(2))))")
             Row("Swift overrides & super", formatWith(formatter: LoudFormatter(), message: "hello"))
-            Button {
-                counter = Counter.shared.increment()
-            } label: {
-                Row("Object", "Counter.shared.value = \(counter), tap to increment")
-            }
-            .buttonStyle(.borderless)
+            CounterRow()
             Row("Companion object", "100 °C = \(Temperature.Companion.shared.fromCelsius(value: 100).fahrenheit) °F")
             let point = Point(x: 1, y: 2)
             Row("Data class", "\(point.copy(x: 3, y: 4)), equal: \(point == Point(x: 1, y: 2))")
@@ -73,6 +65,21 @@ struct ClassesSection: View {
             // :module-d is HIDDEN, so its Engine class is an empty stub in Swift
             Row("Hidden module", Car().drive())
         }
+    }
+}
+
+/// Kotlin objects are not observable, so the row keeps its own copy of the counter.
+/// It is a separate view, so a tap only updates this row
+struct CounterRow: View {
+    @State private var counter = Counter.shared.value
+
+    var body: some View {
+        Button {
+            counter = Counter.shared.increment()
+        } label: {
+            Row("Object", "Counter.shared.value = \(counter), tap to increment")
+        }
+        .buttonStyle(.borderless)
     }
 }
 
@@ -214,12 +221,31 @@ struct CoroutinesSection: View {
             .buttonStyle(.borderless)
         }
         .task {
-            guard users == nil else { return }
-            users = await Result(catching: { try await viewModel.loadUsers() })
-            items = await Result(catching: { try await fetchAll(repository: SwiftRepository(), ids: [1, 2]) })
+            guard users == nil || items == nil else { return }
+            // The two calls don't depend on each other, so they run concurrently
+            async let loadedUsers = load { try await viewModel.loadUsers() }
+            async let loadedItems = load { try await fetchAll(repository: SwiftRepository(), ids: [1, 2]) }
+            users = await loadedUsers
+            items = await loadedItems
         }
         .sheet(isPresented: $isShowingFlow) {
             UsersFlowView(viewModel: viewModel)
+                #if os(macOS)
+                // A List has no ideal size, so give the macOS sheet one
+                .frame(minWidth: 320, minHeight: 280)
+                #endif
+        }
+    }
+
+    /// Returns nil when the task is cancelled, for example when the section scrolls
+    /// off screen, so the next `.task` loads again
+    private func load<T>(_ body: () async throws -> T) async -> Result<T, Error>? {
+        do {
+            return .success(try await body())
+        } catch is CancellationError {
+            return nil
+        } catch {
+            return .failure(error)
         }
     }
 
@@ -236,16 +262,6 @@ struct CoroutinesSection: View {
 final class SwiftRepository: Repository {
     override func fetch(id: Int32) async throws -> String {
         "Swift item \(id)"
-    }
-}
-
-private extension Result where Failure == Error {
-    init(catching body: () async throws -> Success) async {
-        do {
-            self = .success(try await body())
-        } catch {
-            self = .failure(error)
-        }
     }
 }
 
