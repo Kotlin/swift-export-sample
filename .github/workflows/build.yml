@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-xcode:
-    name: Build iOS and macOS apps
+  test-xcode:
+    name: Test iOS and macOS apps
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -24,22 +24,22 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5.0.0
 
-      - name: Build iOS simulator app
+      - name: Test on iOS simulator
         run: |
-          xcodebuild build \
+          # Use the first iOS simulator that this Xcode accepts for the scheme
+          SIMULATOR_ID=$(xcodebuild -project appleApp/appleApp.xcodeproj -scheme appleApp -showdestinations \
+            | grep "platform:iOS Simulator" | grep -v placeholder | head -1 | sed -E 's/.*id:([^,]+),.*/\1/')
+          xcodebuild test \
           -project appleApp/appleApp.xcodeproj \
-          -configuration Debug \
           -scheme appleApp \
-          -sdk iphonesimulator \
-          -arch arm64 \
+          -destination "id=$SIMULATOR_ID" \
           -derivedDataPath ./build \
           CODE_SIGNING_ALLOWED=NO
 
-      - name: Build macOS app
+      - name: Test on macOS
         run: |
-          xcodebuild build \
+          xcodebuild test \
           -project appleApp/appleApp.xcodeproj \
-          -configuration Debug \
           -scheme appleApp \
           -destination 'platform=macOS,arch=arm64' \
           -derivedDataPath ./build \
