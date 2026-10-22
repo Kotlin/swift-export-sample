@@ -38,6 +38,13 @@ struct BasicsTests {
         #expect(formatPrice(amount: 9.99, currency: "EUR") == "9.99 EUR")
     }
 
+    @Test func contextParameters() {
+        // Context parameters are passed first, without a label
+        let log = AuditLog()
+        #expect(placeOrder(log, item: "book") == "Order for book placed")
+        #expect(log.entries() == ["Ordered book"])
+    }
+
     @Test func anyType() {
         #expect(typeOf(value: "text") == "String")
         #expect(typeOf(value: Int32(1)) == "Int")

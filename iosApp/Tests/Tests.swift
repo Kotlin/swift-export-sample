@@ -1,6 +1,7 @@
 import XCTest
 import UIKit
-import Shared
+// Declarations that require an opt-in in Kotlin are Swift SPI
+@_spi(com$github$jetbrains$swiftexport$ExperimentalSampleApi) import Shared
 import ModuleA
 import ModuleB
 import ModuleC
@@ -34,6 +35,14 @@ final class ModulesTests: XCTestCase {
         let tracker = analytics()
         tracker.track(event: Event(name: "test", properties: ["key": "value"]))
         XCTAssertEqual(tracker.trackedEvents().map(\.name), ["test"])
+    }
+
+    func testHiddenDependency() {
+        // :module-d is HIDDEN: Engine is an empty stub, but Car can still inherit from it
+        let car = Car()
+        XCTAssertEqual(car.drive(), "Engine started, driving")
+        let engine: ExportedKotlinPackages.com.github.jetbrains.moduled.Engine = car
+        XCTAssertTrue(engine === car)
     }
 
     func testNestedPackage() {
@@ -96,6 +105,13 @@ final class BasicsTests: XCTestCase {
         XCTAssertEqual(sumAll(numbers: 1, 2, 3, 4), 10)
     }
 
+    func testContextParameters() {
+        // Context parameters are passed first, without a label
+        let log = AuditLog()
+        XCTAssertEqual(placeOrder(log, item: "book"), "Order for book placed")
+        XCTAssertEqual(log.entries(), ["Ordered book"])
+    }
+
     func testDefaultArgumentsMustBePassedExplicitly() {
         XCTAssertEqual(formatPrice(amount: 9.99, currency: "EUR"), "9.99 EUR")
     }
@@ -123,6 +139,15 @@ final class TestCircle: Shared.Shape {
     }
 }
 
+/// Swift subclass that overrides an open property and an open method, and calls `super`
+final class LoudFormatter: MessageFormatter {
+    override var prefix: String { "Swift" }
+
+    override func format(message: String) -> String {
+        super.format(message: message).uppercased()
+    }
+}
+
 final class ClassesTests: XCTestCase {
 
     func testConstructorsNestedAndInnerClasses() {
@@ -145,6 +170,12 @@ final class ClassesTests: XCTestCase {
         let shapes: [Shared.Shape] = [TestCircle(radius: 1), Rectangle(width: 2, height: 3)]
         XCTAssertEqual(totalArea(shapes: shapes), Double.pi + 6, accuracy: 0.0001)
         XCTAssertTrue(describeAll(shapes: shapes)[0].hasPrefix("Circle with area 3.14"))
+    }
+
+    func testSwiftOverridesOfPropertiesAndSuper() {
+        // Kotlin calls the Swift overrides, and `super` reads the overridden `prefix`
+        XCTAssertEqual(formatWith(formatter: LoudFormatter(), message: "hello"), "[SWIFT] HELLO")
+        XCTAssertEqual(formatWith(formatter: MessageFormatter(), message: "hello"), "[Kotlin] hello")
     }
 
     func testObjectsAndCompanions() {
@@ -188,6 +219,13 @@ final class ClassesTests: XCTestCase {
 
 // MARK: - Interfaces
 
+/// Swift implementation of a Kotlin interface, passed back to Kotlin
+final class FrenchGreeting: GreetingBase, Greeting {
+    var language: String { "French" }
+
+    func greet(name: String) -> String { "Bonjour, \(name)!" }
+}
+
 final class InterfacesTests: XCTestCase {
 
     func testProtocols() {
@@ -196,6 +234,13 @@ final class InterfacesTests: XCTestCase {
         XCTAssertEqual(all[1].greet(name: "Welt"), "Hallo, Welt!")
         // Default implementation from the Kotlin interface
         XCTAssertEqual(all[0].greetAll(names: ["A", "B"]), ["Hello, A!", "Hello, B!"])
+    }
+
+    func testSwiftImplementationsOfKotlinInterfaces() {
+        let all: [any Greeting] = greetings() + [FrenchGreeting()]
+        XCTAssertEqual(greetEveryone(greetings: all, name: "Kodee"), ["Hello, Kodee!", "Hallo, Kodee!", "Bonjour, Kodee!"])
+        // The Kotlin default implementation of greetAll calls the Swift greet
+        XCTAssertEqual(FrenchGreeting().greetAll(names: ["A"]), ["Bonjour, A!"])
     }
 
     func testFunctionalInterfaces() {
@@ -267,6 +312,16 @@ final class CollectionsTests: XCTestCase {
         XCTAssertEqual(nestedLists(), [[1, 2], nil, [3]])
     }
 
+    func testStdlibTypes() {
+        // Arrays and other stdlib classes are Kotlin types from the KotlinStdlib module
+        let bytes = bytesOf(text: "Kotlin")
+        XCTAssertEqual(bytes.size, 6)
+        XCTAssertEqual(bytes[0], 75)
+        XCTAssertEqual(checksum(bytes: bytes), 625)
+        let builder = ExportedKotlinPackages.kotlin.text.StringBuilder()
+        XCTAssertEqual(buildGreeting(builder: builder, name: "Swift"), "Hello, Swift")
+    }
+
     func testRanges() {
         XCTAssertEqual(digits(), 0...9)
         XCTAssertTrue(isAdult(age: 18))
@@ -329,6 +384,18 @@ final class FunctionTypesTests: XCTestCase {
     }
 }
 
+final class AnnotationsTests: XCTestCase {
+
+    func testOptInRequirementsAreSpi() {
+        XCTAssertEqual(experimentalGreeting(), "Hello from an experimental API")
+    }
+
+    func testDocumentedDeclarations() {
+        // KDoc is available in Xcode quick help for `documented(name:)`
+        XCTAssertEqual(documented(name: "Swift"), "Hello, Swift")
+    }
+}
+
 final class ExceptionsTests: XCTestCase {
 
     func testThrowingFunctions() throws {
@@ -345,6 +412,14 @@ final class ExceptionsTests: XCTestCase {
 }
 
 // MARK: - Coroutines
+
+/// Swift subclass that overrides a Kotlin suspend function with an async method
+final class CachedRepository: Repository {
+    override func fetch(id: Int32) async throws -> String {
+        try await Task.sleep(for: .milliseconds(1))
+        return "Swift item \(id)"
+    }
+}
 
 final class CoroutinesTests: XCTestCase {
 
@@ -366,6 +441,32 @@ final class CoroutinesTests: XCTestCase {
         XCTAssertNil(viewModel.selected.value)
         viewModel.select(user: User(name: "Jane", age: 25))
         XCTAssertEqual(viewModel.selected.value?.name, "Jane")
+    }
+
+    func testMutableStateFlowValue() {
+        let viewModel = UsersViewModel()
+        viewModel.query.value = "Jane"
+        XCTAssertEqual(viewModel.query.value, "Jane")
+    }
+
+    func testSharedFlows() async throws {
+        let viewModel = UsersViewModel()
+        viewModel.select(user: User(name: "Jane", age: 25))
+        viewModel.select(user: User(name: "John", age: 30))
+        var events: [String] = []
+        // A SharedFlow never completes, so stop collecting explicitly
+        for try await event in viewModel.events.asAsyncSequence() {
+            events.append(event)
+            if events.count == 2 { break }
+        }
+        XCTAssertEqual(events, ["Selected Jane", "Selected John"])
+    }
+
+    func testSwiftOverridesOfSuspendFunctions() async throws {
+        let kotlinItems = try await fetchAll(repository: Repository(), ids: [1])
+        XCTAssertEqual(kotlinItems, ["Kotlin item 1"])
+        let swiftItems = try await fetchAll(repository: CachedRepository(), ids: [1, 2])
+        XCTAssertEqual(swiftItems, ["Swift item 1", "Swift item 2"])
     }
 
     func testSuspendFunctionTypes() async throws {

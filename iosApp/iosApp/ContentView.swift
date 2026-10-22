@@ -1,7 +1,7 @@
 import SwiftUI
 import CryptoKit
 
-import Shared
+@_spi(com$github$jetbrains$swiftexport$ExperimentalSampleApi) import Shared
 import ModuleA
 import ModuleB
 import ModuleC
@@ -55,6 +55,7 @@ struct ClassesSection: View {
             // Kotlin computes the area of shapes implemented both in Kotlin and in Swift
             let area = totalArea(shapes: [Square(side: 2), SwiftCircle(radius: 1)])
             Row("Inheritance", "total area = \(area.formatted(.number.precision(.fractionLength(2))))")
+            Row("Swift overrides & super", formatWith(formatter: LoudFormatter(), message: "hello"))
             Button {
                 counter = Counter.shared.increment()
             } label: {
@@ -65,7 +66,9 @@ struct ClassesSection: View {
             Row("Data class", "\(point.copy(x: 3, y: 4)), equal: \(point == Point(x: 1, y: 2))")
             Row("Value class", "domain = \(email(value: "kotlin@jetbrains.com").domain)")
             Row("@ObjCName", "SwiftFriendlyName().run(21) = \(SwiftFriendlyName().run(21))")
-            Row("Interface", greetings().map { $0.greet(name: "Swift") }.joined(separator: " "))
+            Row("Interface", greetEveryone(greetings: greetings() + [FrenchGreeting()], name: "Swift").joined(separator: " "))
+            // :module-d is HIDDEN, so its Engine class is an empty stub in Swift
+            Row("Hidden module", Car().drive())
         }
     }
 }
@@ -83,6 +86,23 @@ final class SwiftCircle: Shared.Shape {
     override func area() -> Double {
         Double.pi * radius * radius
     }
+}
+
+/// Swift subclass that overrides an open Kotlin property and method, and calls `super`
+final class LoudFormatter: MessageFormatter {
+    override var prefix: String { "Swift" }
+
+    override func format(message: String) -> String {
+        super.format(message: message).uppercased()
+    }
+}
+
+/// Swift implementation of a Kotlin interface.
+/// It inherits from an exported Kotlin class, because KotlinBase itself can't be instantiated
+final class FrenchGreeting: GreetingBase, Greeting {
+    var language: String { "French" }
+
+    func greet(name: String) -> String { "Bonjour, \(name)!" }
 }
 
 // MARK: - Types
@@ -152,6 +172,10 @@ struct FunctionsSection: View {
             })
             Row("Swift API from Kotlin", reverseImportExample(platform: platform))
             Row("@Throws", parseAgeResult("forty two"))
+            // Context parameters are passed first, without a label
+            Row("Context parameters", placeOrder(AuditLog(), item: "book"))
+            // Opt-in requirements are SPI, see `@_spi` on the Shared import
+            Row("@RequiresOptIn", experimentalGreeting())
         }
     }
 
@@ -171,12 +195,15 @@ struct FunctionsSection: View {
 struct CoroutinesSection: View {
     @State private var viewModel = UsersViewModel()
     @State private var users: Result<[User], Error>?
+    @State private var items: Result<[String], Error>?
     @State private var isShowingFlow = false
 
     var body: some View {
         Section("Coroutines") {
             // Suspend functions are async Swift functions
-            Row("Suspend function", usersDescription)
+            Row("Suspend function", describe(users) { $0.map(\.name).joined(separator: ", ") })
+            // Kotlin calls the async Swift override of a suspend function
+            Row("Suspend override", describe(items) { $0.joined(separator: ", ") })
             // Flows are async sequences
             Button("Collect Flow") {
                 isShowingFlow = true
@@ -184,22 +211,36 @@ struct CoroutinesSection: View {
         }
         .task {
             guard users == nil else { return }
-            do {
-                users = .success(try await viewModel.loadUsers())
-            } catch {
-                users = .failure(error)
-            }
+            users = await Result(catching: { try await viewModel.loadUsers() })
+            items = await Result(catching: { try await fetchAll(repository: SwiftRepository(), ids: [1, 2]) })
         }
         .sheet(isPresented: $isShowingFlow) {
             UsersFlowView(viewModel: viewModel)
         }
     }
 
-    private var usersDescription: String {
-        switch users {
+    private func describe<T>(_ result: Result<T, Error>?, _ success: (T) -> String) -> String {
+        switch result {
         case nil: "Loading…"
-        case .success(let users): users.map(\.name).joined(separator: ", ")
+        case .success(let value): success(value)
         case .failure(let error): "Failed: \(error)"
+        }
+    }
+}
+
+/// Swift subclass that overrides a Kotlin suspend function with an async method
+final class SwiftRepository: Repository {
+    override func fetch(id: Int32) async throws -> String {
+        "Swift item \(id)"
+    }
+}
+
+private extension Result where Failure == Error {
+    init(catching body: () async throws -> Success) async {
+        do {
+            self = .success(try await body())
+        } catch {
+            self = .failure(error)
         }
     }
 }

@@ -15,6 +15,15 @@ final class Circle: Shape {
     }
 }
 
+// Swift subclass that overrides an open property and an open method, and calls `super`
+final class LoudFormatter: MessageFormatter {
+    override var prefix: String { "Swift" }
+
+    override func format(message: String) -> String {
+        super.format(message: message).uppercased()
+    }
+}
+
 struct ClassesTests {
 
     @Test func constructorsNestedAndInnerClasses() {
@@ -35,6 +44,12 @@ struct ClassesTests {
         let shapes: [Shape] = [Circle(radius: 1), Rectangle(width: 2, height: 3)]
         #expect(abs(totalArea(shapes: shapes) - (Double.pi + 6)) < 0.0001)
         #expect(describeAll(shapes: shapes).first!.hasPrefix("Circle with area 3.14"))
+    }
+
+    @Test func swiftOverridesOfPropertiesAndSuper() {
+        // Kotlin calls the Swift overrides, and `super` reads the overridden `prefix`
+        #expect(formatWith(formatter: LoudFormatter(), message: "hello") == "[SWIFT] HELLO")
+        #expect(formatWith(formatter: MessageFormatter(), message: "hello") == "[Kotlin] hello")
     }
 
     @Test func objectsAndCompanions() {

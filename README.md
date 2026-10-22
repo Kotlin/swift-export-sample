@@ -16,6 +16,7 @@ The Kotlin code has two consumers. An iOS app gets it through the Xcode integrat
 - `:module-a` - A Kotlin library that describes its own Swift representation (`ModuleA`) in its build script. This is what a library author would do.
 - `:module-b` - A Kotlin library with no Swift Export configuration at all. `:shared` decides how it appears in Swift (`ModuleB`). This is what a consumer does when a library says nothing about itself.
 - `:module-c` - An `implementation` dependency of `:shared`. By default, Swift would only get the types that the `Shared` API uses. `:shared` exports the whole module as `ModuleC` with `SwiftExportVisibility.EXPOSED`.
+- `:module-d` - Another `implementation` dependency, hidden from Swift with `SwiftExportVisibility.HIDDEN`. `Shared` has a class that inherits from its `Engine`, so Swift gets `Engine` as an empty stub with no members.
 - `iosApp` - A SwiftUI app. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app's only screen lists the features with live results.
 - `spm-consumer` - A plain Swift package that depends on the package produced by `:shared:exportDebugSwiftPackage`. It has a small executable and the language feature tests, which run on macOS with `swift test`.
 
@@ -60,6 +61,7 @@ kotlin {
         api(projects.moduleA)
         api(projects.moduleB)
         implementation(projects.moduleC)
+        implementation(projects.moduleD)
     }
 }
 
@@ -76,6 +78,8 @@ fun SwiftExportIntegration.reconfigureDependencies() {
         rootPackage = "com.github.jetbrains.modulec"
         visibility = SwiftExportVisibility.EXPOSED
     }
+    // :module-d is not exported: types that the :shared API mentions become empty stubs
+    configure(projects.moduleD, SwiftExportVisibility.HIDDEN)
 }
 ```
 
@@ -120,7 +124,7 @@ A library configures its Swift representation once, the way `:module-a` does. Wh
 The same `configure` block also accepts a `visibility`:
 
 - `SwiftExportVisibility.EXPOSED` exports the full API of a dependency, as if it were an `api` dependency. The dependency can stay `implementation`, so other Gradle consumers of `:shared` don't see it. `:shared` does this with `:module-c`.
-- `SwiftExportVisibility.HIDDEN` removes a dependency from the Swift API, even if it is an `api` dependency. Only empty stubs remain for the types that other modules mention.
+- `SwiftExportVisibility.HIDDEN` removes a dependency from the Swift API, even if it is an `api` dependency. Only empty stubs remain for the types that other modules mention. A stub is still a real Swift class, so `Shared.Car` can inherit from the stubbed `Engine` of `:module-d`.
 
 The shorthand is `configure(dependency, SwiftExportVisibility.HIDDEN)`. Visibility applies to that one library, not to its dependencies.
 
@@ -173,19 +177,28 @@ The Kotlin API of `:shared` is split into one file per topic. Comments in each f
 | Kotlin source | Swift tests | Covers |
 |---|---|---|
 | `Basics.kt` | `BasicsTests.swift` | Top-level functions and properties, `const val`, primitive and unsigned types, `Char`, nullability, overloads, `vararg`, `Any`, `Unit`, `Nothing` |
-| `Classes.kt` | `ClassesTests.swift` | Classes, secondary constructors, nested and inner classes, type aliases, open and abstract classes, Swift subclasses of Kotlin classes, objects, companion objects, data classes, value classes, property visibility, `lateinit` |
-| `Interfaces.kt` | `InterfacesTests.swift` | Interfaces as Swift protocols, default methods, `fun interface` |
+| `ContextParameters.kt` | `BasicsTests.swift` | Context parameters as leading unlabeled Swift parameters |
+| `Classes.kt` | `ClassesTests.swift` | Classes, secondary constructors, nested and inner classes, type aliases, open and abstract classes, Swift subclasses that override open methods and properties and call `super`, objects, companion objects, data classes, value classes, property visibility, `lateinit` |
+| `Interfaces.kt` | `InterfacesTests.swift` | Interfaces as Swift protocols, default methods, Swift classes implementing Kotlin interfaces, `fun interface` |
 | `SealedTypes.kt`, `Enums.kt` | `SealedAndEnumTests.swift` | Sealed classes and interfaces with exhaustive `switch` over `sealedType()`, enum classes as native Swift enums |
 | `Generics.kt` | `TypesTests.swift` | Generic classes and functions (type-erased) |
-| `Collections.kt` | `TypesTests.swift` | `List`, `Set` and `Map` as Swift collections, ranges, mutable collections |
+| `Collections.kt` | `TypesTests.swift` | `List`, `Set` and `Map` as Swift collections, ranges, mutable collections, `ByteArray` and `StringBuilder` from the `KotlinStdlib` module |
 | `Operators.kt` | `TypesTests.swift` | Arithmetic and comparison operators, subscripts, `contains`, `invoke` as `callAsFunction`, `infix` |
 | `Extensions.kt` | `TypesTests.swift` | Extension functions and properties on Kotlin and Swift types, on nullable types |
 | `FunctionTypes.kt` | `TypesTests.swift` | Function types as Swift closures, Swift implementations of Kotlin-declared dependencies |
-| `Coroutines.kt` | `CoroutinesTests.swift` | `suspend` functions as `async`, `Flow` as `AsyncSequence`, `StateFlow.value`, suspend function types, cancellation |
+| `Coroutines.kt` | `CoroutinesTests.swift` | `suspend` functions as `async`, Swift overrides of `suspend` functions, `Flow` and `SharedFlow` as `AsyncSequence`, `StateFlow.value`, settable `MutableStateFlow.value`, suspend function types, cancellation |
 | `Exceptions.kt` | `ExceptionsTests.swift` | `@Throws` functions and constructors as Swift `throws` |
-| `Annotations.kt` | `ClassesTests.swift` (`@ObjCName` only) | KDoc as Swift documentation comments, `@ObjCName`, `@HiddenFromObjC`, `@Deprecated` as `@available(*, deprecated)` |
+| `Annotations.kt` | `AnnotationsTests.swift`, `ClassesTests.swift` | KDoc as Swift documentation comments, `@ObjCName`, `@HiddenFromObjC`, `@Deprecated` as `@available(*, deprecated)`, `@RequiresOptIn` as Swift SPI |
 | `nested/NestedPackage.kt` | `BasicsTests.swift` | Packages outside of `rootPackage` as Swift namespaces |
 | `iosMain`, `macosMain` | `iosApp/Tests/Tests.swift`, `ModulesTests.swift` | Platform-specific API, UIKit and Foundation types |
+
+`iosApp/Tests/Tests.swift` runs the same checks with XCTest against the modules that `embedSwiftExportForXcode` embeds in the app.
+
+A declaration that needs an opt-in in Kotlin is only visible to Swift through an SPI import. The SPI name is the annotation's fully qualified name, with `$` in place of the dots:
+
+```swift
+@_spi(com$github$jetbrains$swiftexport$ExperimentalSampleApi) import Shared
+```
 
 ### Known limitations
 
@@ -195,6 +208,7 @@ Some things don't map to Swift yet. The sample runs into these:
 - Generics are erased. Type parameters become `(any KotlinRuntimeSupport._KotlinBridgeable)?`, so Swift has to cast values (`Box`).
 - Data classes get `copy`, but no `componentN` functions. `==`, `hashValue` and `description` come from `NSObject`, which Kotlin wires to `equals`, `hashCode` and `toString`.
 - Mutable collections and arrays stay Kotlin types rather than Swift collections (`mutableNames()`). `compareTo` gives you `<` and `>`, but no `Comparable` conformance.
+- A Swift class that implements a Kotlin interface must inherit from an exported Kotlin class (`GreetingBase`), because `KotlinBase` can't be instantiated from Swift ([KT-88251](https://youtrack.jetbrains.com/issue/KT-88251)).
 - Swift names can clash with SDK names. SwiftUI also declares `Shape`, so `iosApp` writes `Shared.Shape`.
 
 ## Getting started

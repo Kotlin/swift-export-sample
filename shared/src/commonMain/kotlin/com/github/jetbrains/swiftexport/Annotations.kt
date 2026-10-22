@@ -32,3 +32,11 @@ fun kotlinOnly(): String = "invisible from Swift"
 fun oldApi(): String = "old"
 
 fun newApi(): String = "new"
+
+// Opt-in requirements become Swift SPI: Swift sees the declaration only with
+// `@_spi(ExperimentalSampleApi) import Shared`
+@RequiresOptIn(message = "This API is experimental", level = RequiresOptIn.Level.WARNING)
+annotation class ExperimentalSampleApi
+
+@ExperimentalSampleApi
+fun experimentalGreeting(): String = "Hello from an experimental API"

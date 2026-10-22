@@ -27,6 +27,14 @@ struct ModulesTests {
         #expect(tracker.trackedEvents().map(\.name) == ["test"])
     }
 
+    @Test func hiddenDependency() {
+        // :module-d is HIDDEN: Engine is an empty stub, but Car can still inherit from it
+        let car = Car()
+        #expect(car.drive() == "Engine started, driving")
+        let engine: ExportedKotlinPackages.com.github.jetbrains.moduled.Engine = car
+        #expect(engine === car)
+    }
+
     @Test func platformSpecificApi() {
         #expect(platformName().hasPrefix("macOS"))
     }

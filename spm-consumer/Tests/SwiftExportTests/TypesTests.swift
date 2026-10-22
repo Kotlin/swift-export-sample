@@ -27,6 +27,16 @@ struct CollectionsTests {
         #expect(nestedLists() == [[1, 2], nil, [3]])
     }
 
+    @Test func stdlibTypes() {
+        // Arrays and other stdlib classes are Kotlin types from the KotlinStdlib module
+        let bytes = bytesOf(text: "Kotlin")
+        #expect(bytes.size == 6)
+        #expect(bytes[0] == 75)
+        #expect(checksum(bytes: bytes) == 625)
+        let builder = ExportedKotlinPackages.kotlin.text.StringBuilder()
+        #expect(buildGreeting(builder: builder, name: "Swift") == "Hello, Swift")
+    }
+
     @Test func ranges() {
         #expect(digits() == 0...9)
         #expect(isAdult(age: 18))

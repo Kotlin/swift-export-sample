@@ -20,3 +20,11 @@ fun isAdult(age: Int): Boolean = age in 18..Int.MAX_VALUE
 
 // Mutable collections and arrays stay Kotlin types
 fun mutableNames(): MutableList<String> = mutableListOf("Kotlin", "Swift")
+
+// ByteArray is `ExportedKotlinPackages.kotlin.ByteArray` from the KotlinStdlib module
+fun bytesOf(text: String): ByteArray = text.encodeToByteArray()
+
+fun checksum(bytes: ByteArray): Int = bytes.sum()
+
+// Other stdlib classes are exported on demand, in the KotlinStdlib module
+fun buildGreeting(builder: StringBuilder, name: String): String = builder.append("Hello, ").append(name).toString()

@@ -42,6 +42,15 @@ fun totalArea(shapes: List<Shape>): Double = shapes.sumOf { it.area() }
 
 fun describeAll(shapes: List<Shape>): List<String> = shapes.map { it.describe() }
 
+// Swift subclasses can override open properties as well as methods, and call `super`
+open class MessageFormatter {
+    open val prefix: String = "Kotlin"
+
+    open fun format(message: String): String = "[$prefix] $message"
+}
+
+fun formatWith(formatter: MessageFormatter, message: String): String = formatter.format(message)
+
 // Objects are singletons, available as `.shared` in Swift
 object Counter {
     var value: Int = 0
@@ -91,3 +100,9 @@ fun useClassFromB(): ClassFromB = ClassFromB("class_B")
 
 // :module-c is an `implementation` dependency, but exported fully because of `SwiftExportVisibility.EXPOSED`
 fun analytics(): com.github.jetbrains.modulec.Analytics = com.github.jetbrains.modulec.Analytics()
+
+// :module-d is hidden with `SwiftExportVisibility.HIDDEN`. Engine is an empty stub in Swift,
+// so Car can still inherit from it, but Engine's own members are not exported.
+class Car : com.github.jetbrains.moduled.Engine() {
+    fun drive(): String = "${start()}, driving"
+}

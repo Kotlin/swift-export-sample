@@ -22,6 +22,12 @@ class GermanGreeting : Greeting {
 
 fun greetings(): List<Greeting> = listOf(EnglishGreeting(), GermanGreeting())
 
+// Swift classes can implement Kotlin interfaces too. Such a class has to inherit
+// from an exported Kotlin class, because KotlinBase itself can't be instantiated (KT-88251).
+open class GreetingBase
+
+fun greetEveryone(greetings: List<Greeting>, name: String): List<String> = greetings.map { it.greet(name) }
+
 // Functional interfaces: `invoke`-style calls and a Swift closure-based factory
 fun interface Validator {
     fun validate(input: String): Boolean

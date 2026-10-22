@@ -1,6 +1,14 @@
 import Testing
 import Shared
 
+// Swift subclass that overrides a Kotlin suspend function with an async method
+final class CachedRepository: Repository {
+    override func fetch(id: Int32) async throws -> String {
+        try await Task.sleep(for: .milliseconds(1))
+        return "Swift item \(id)"
+    }
+}
+
 struct CoroutinesTests {
 
     @Test func suspendFunctionsAreAsync() async throws {
@@ -21,6 +29,30 @@ struct CoroutinesTests {
         #expect(viewModel.selected.value == nil)
         viewModel.select(user: User(name: "Jane", age: 25))
         #expect(viewModel.selected.value?.name == "Jane")
+    }
+
+    @Test func mutableStateFlowValue() {
+        let viewModel = UsersViewModel()
+        viewModel.query.value = "Jane"
+        #expect(viewModel.query.value == "Jane")
+    }
+
+    @Test func sharedFlows() async throws {
+        let viewModel = UsersViewModel()
+        viewModel.select(user: User(name: "Jane", age: 25))
+        viewModel.select(user: User(name: "John", age: 30))
+        var events: [String] = []
+        // A SharedFlow never completes, so stop collecting explicitly
+        for try await event in viewModel.events.asAsyncSequence() {
+            events.append(event)
+            if events.count == 2 { break }
+        }
+        #expect(events == ["Selected Jane", "Selected John"])
+    }
+
+    @Test func swiftOverridesOfSuspendFunctions() async throws {
+        #expect(try await fetchAll(repository: Repository(), ids: [1]) == ["Kotlin item 1"])
+        #expect(try await fetchAll(repository: CachedRepository(), ids: [1, 2]) == ["Swift item 1", "Swift item 2"])
     }
 
     @Test func suspendFunctionTypes() async throws {

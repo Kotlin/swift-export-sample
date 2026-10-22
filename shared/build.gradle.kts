@@ -41,6 +41,8 @@ kotlin {
         api(projects.moduleB)
         // implementation dependency, forced to be exported as a separate Swift module
         implementation(projects.moduleC)
+        // implementation dependency, hidden from Swift entirely
+        implementation(projects.moduleD)
     }
 }
 
@@ -59,4 +61,6 @@ fun SwiftExportIntegration.reconfigureDependencies() {
         rootPackage = "com.github.jetbrains.modulec"
         visibility = SwiftExportVisibility.EXPOSED
     }
+    // :module-d is not exported: types that the :shared API mentions become empty stubs
+    configure(projects.moduleD, SwiftExportVisibility.HIDDEN)
 }
