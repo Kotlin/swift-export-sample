@@ -245,6 +245,10 @@ swift test --package-path spm-consumer
 
 `.github/workflows/build.yml` runs two jobs on pushes and pull requests to `master`. One runs the app's XCTests on an iOS simulator and on macOS. The other exports the Swift package and runs `swift test` and `swift run` in `spm-consumer`.
 
+### Working with AI coding agents
+
+[`AGENTS.md`](AGENTS.md) describes the project layout, the commands to verify a change, and the Swift Export pitfalls this sample has run into. Codex and Cursor read it directly, and `CLAUDE.md` points Claude Code to it.
+
 ## Learn more
 
 - [Interoperability with Swift using Swift export](https://kotlinlang.org/docs/native-swift-export.html)
