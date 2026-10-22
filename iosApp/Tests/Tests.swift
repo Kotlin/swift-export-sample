@@ -1,60 +1,394 @@
 import XCTest
-@testable import Shared
-@testable import ModuleA
-@testable import ModuleB
-@testable import ModuleC
+import UIKit
+import Shared
+import ModuleA
+import ModuleB
+import ModuleC
 
-// The full set of language feature tests lives in spm-consumer/Tests and runs with `swift test`.
-// These tests check the modules embedded into the app by `embedSwiftExportForXcode`.
+// These tests run against the modules embedded into the app by `embedSwiftExportForXcode`.
+// spm-consumer/Tests checks the same features against the exported Swift package.
 
-final class SharedTests: XCTestCase {
+// MARK: - Modules
 
-    func testSharedFunction() {
-        XCTAssertEqual(sharedFunction(), 15)
+final class ModulesTests: XCTestCase {
+
+    func testLibraryConfiguredModule() {
+        // :module-a sets its own `moduleName` and `rootPackage`
+        XCTAssertEqual(ClassFromA(name: "A").hello(), "Hello from A")
+        XCTAssertEqual(moduleAFunction(), 5)
+        XCTAssertEqual(useClassFromA().hello(), "Hello from class_A")
+        XCTAssertEqual(iosModuleABar(), 54321)
     }
 
-    func testIosSpecificApi() {
+    func testConsumerConfiguredModule() {
+        // :module-b is configured by :shared
+        XCTAssertEqual(ClassFromB(name: "B").hello(), "Hello from B")
+        XCTAssertEqual(moduleBFunction(), 10)
+        XCTAssertEqual(useClassFromB().hello(), "Hello from class_B")
+        XCTAssertEqual(iosModuleBBar(), 12345)
+    }
+
+    func testExposedImplementationDependency() {
+        // :module-c is an implementation dependency with SwiftExportVisibility.EXPOSED
+        XCTAssertEqual(moduleCFunction(), 7)
+        let tracker = analytics()
+        tracker.track(event: Event(name: "test", properties: ["key": "value"]))
+        XCTAssertEqual(tracker.trackedEvents().map(\.name), ["test"])
+    }
+
+    func testNestedPackage() {
+        // Declarations outside of `rootPackage` keep their namespace
+        XCTAssertEqual(nested.nestedPackageFunction(), "nested")
+        XCTAssertEqual(nested.NestedPackageClass().hello(), "Hello from a nested package")
+        XCTAssertEqual(ExportedKotlinPackages.com.github.jetbrains.swiftexport.nested.nestedPackageFunction(), "nested")
+    }
+}
+
+// MARK: - Platform
+
+final class PlatformTests: XCTestCase {
+
+    func testIosMainDeclarations() {
         XCTAssertEqual(iosBar(), 125)
         XCTAssertTrue(platformName().hasPrefix(UIDevice.current.systemName))
-        XCTAssertEqual(currentDevice().model, UIDevice.current.model)
     }
 
-    func testSuspendFunction() async throws {
+    func testPlatformTypes() {
+        // UIKit types used in iosMain signatures are the real UIKit types in Swift
+        let device: UIDevice = currentDevice()
+        XCTAssertEqual(device.model, UIDevice.current.model)
+    }
+}
+
+// MARK: - Basics
+
+final class BasicsTests: XCTestCase {
+
+    func testTopLevelDeclarations() {
+        XCTAssertEqual(SAMPLE_NAME, "Swift Export Sample")
+        XCTAssertEqual(answer, 42)
+        XCTAssertEqual(sharedFunction(), 15)
+
+        counter = 10
+        XCTAssertEqual(increment(), 11)
+        XCTAssertEqual(counter, 11)
+    }
+
+    func testPrimitiveTypes() {
+        let result = primitives(bool: true, byte: 1, short: 2, int: 3, long: 4, float: 5.5, double: 6.5)
+        XCTAssertEqual(result, "true 1 2 3 4 5.5 6.5")
+        XCTAssertEqual(unsigned(value: 21), UInt64(42))
+        // Char is a UTF-16 code unit
+        XCTAssertEqual(charCode(char: "A".utf16.first!), 65)
+    }
+
+    func testNullability() {
+        XCTAssertEqual(greet(name: nil), "Hello, stranger!")
+        XCTAssertEqual(greet(name: "Kotlin"), "Hello, Kotlin!")
+        XCTAssertEqual(findPositive(value: 5), 5)
+        XCTAssertNil(findPositive(value: -5))
+    }
+
+    func testOverloadsAndVarargs() {
+        XCTAssertEqual(describe(value: Int32(1)), "Int 1")
+        XCTAssertEqual(describe(value: 1.5), "Double 1.5")
+        XCTAssertEqual(describe(value: "one"), "String \"one\"")
+        XCTAssertEqual(sumAll(numbers: 1, 2, 3, 4), 10)
+    }
+
+    func testDefaultArgumentsMustBePassedExplicitly() {
+        XCTAssertEqual(formatPrice(amount: 9.99, currency: "EUR"), "9.99 EUR")
+    }
+
+    func testAnyType() {
+        XCTAssertEqual(typeOf(value: "text"), "String")
+        XCTAssertEqual(typeOf(value: Int32(1)), "Int")
+        XCTAssertEqual(typeOf(value: [1, 2, 3]), "List")
+    }
+}
+
+// MARK: - Classes
+
+/// Swift subclass of an exported open Kotlin class
+final class TestCircle: Shared.Shape {
+    let radius: Double
+
+    init(radius: Double) {
+        self.radius = radius
+        super.init(name: "Circle")
+    }
+
+    override func area() -> Double {
+        Double.pi * radius * radius
+    }
+}
+
+final class ClassesTests: XCTestCase {
+
+    func testConstructorsNestedAndInnerClasses() {
+        let myClass = MyClass(property: 5)
+        XCTAssertEqual(MyClass(text: "four").property, 4)
+        XCTAssertEqual(sum(a: myClass, b: MyNested(nestedProperty: 6)), 11)
+        XCTAssertEqual(MyClass.Inner(outer__: myClass).outerProperty(), 5)
+    }
+
+    func testInheritance() {
+        let square = Square(side: 2)
+        XCTAssertEqual(square.area(), 4)
+        XCTAssertEqual(square.describe(), "Square: Rectangle with area 4.0")
+        // Square is a Rectangle subclass in Swift too
+        let rectangle: Rectangle = square
+        XCTAssertEqual(rectangle.area(), 4)
+    }
+
+    func testSwiftSubclassIsCalledFromKotlin() {
+        let shapes: [Shared.Shape] = [TestCircle(radius: 1), Rectangle(width: 2, height: 3)]
+        XCTAssertEqual(totalArea(shapes: shapes), Double.pi + 6, accuracy: 0.0001)
+        XCTAssertTrue(describeAll(shapes: shapes)[0].hasPrefix("Circle with area 3.14"))
+    }
+
+    func testObjectsAndCompanions() {
+        let start = Counter.shared.value
+        XCTAssertEqual(Counter.shared.increment(), start + 1)
+        XCTAssertTrue(Counter.shared === Counter.shared)
+
+        let boiling = Temperature.Companion.shared.fromCelsius(value: 100)
+        XCTAssertEqual(boiling.fahrenheit, 212)
+    }
+
+    func testDataClasses() {
+        let point = Point(x: 1, y: 2)
+        let moved = point.copy(x: 4, y: 6)
+        XCTAssertEqual(moved.x, 4)
+        // equals, hashCode and toString are available as ==, hashValue and description
+        XCTAssertEqual(point, Point(x: 1, y: 2))
+        XCTAssertEqual(point.hashValue, Point(x: 1, y: 2).hashValue)
+        XCTAssertEqual(point.description, "Point(x=1, y=2)")
+        XCTAssertEqual(point.distanceTo(other: moved), 5)
+    }
+
+    func testValueClasses() {
+        XCTAssertEqual(email(value: "user@example.com").domain, "example.com")
+    }
+
+    func testPropertyVisibility() {
+        let account = Account(owner: "Jane")
+        account.deposit(amount: 100)
+        XCTAssertEqual(account.balance, 100)
+        account.nickname = "JD"
+        XCTAssertEqual(account.nickname, "JD")
+        XCTAssertEqual(account.formattedBalance, "Jane: 100")
+    }
+
+    func testRenamedDeclarations() {
+        // @ObjCName(swiftName = ...) renames the class, the function and the parameter label
+        XCTAssertEqual(SwiftFriendlyName().run(21), 42)
+    }
+}
+
+// MARK: - Interfaces
+
+final class InterfacesTests: XCTestCase {
+
+    func testProtocols() {
+        let all = greetings()
+        XCTAssertEqual(all.map(\.language), ["English", "German"])
+        XCTAssertEqual(all[1].greet(name: "Welt"), "Hallo, Welt!")
+        // Default implementation from the Kotlin interface
+        XCTAssertEqual(all[0].greetAll(names: ["A", "B"]), ["Hello, A!", "Hello, B!"])
+    }
+
+    func testFunctionalInterfaces() {
+        XCTAssertEqual(validateAll(validator: notEmptyValidator(), inputs: ["", "x"]), [false, true])
+        // A Swift closure becomes an implementation of the Kotlin fun interface
+        let shortInput = validator { $0.count < 3 }
+        XCTAssertTrue(shortInput.validate(input: "ok"))
+        XCTAssertFalse(shortInput.validate(input: "too long"))
+    }
+}
+
+// MARK: - Enums & sealed types
+
+final class SealedAndEnumTests: XCTestCase {
+
+    func testSealedClassesSupportExhaustiveSwitch() {
+        let descriptions = loadingStates().map { state -> String in
+            switch state.sealedType() {
+            case .loading: "loading"
+            case .success(let success): "success: \(success.value.data)"
+            case .error(let error): "error: \(error.value.message)"
+            }
+        }
+        XCTAssertEqual(descriptions, ["loading", "success: Kotlin ❤️ Swift", "error: Network is unavailable"])
+    }
+
+    func testSealedInterfaces() {
+        XCTAssertEqual(execute(command: Command.Move(steps: 3)), "Moving 3 steps")
+        XCTAssertEqual(execute(command: Command.Stop.shared), "Stopped")
+    }
+
+    func testEnumsAreSwiftEnums() {
+        let planet = homePlanet()
+        XCTAssertEqual(planet, .Earth)
+        XCTAssertEqual(Planet.allCases.count, 3)
+        XCTAssertEqual(planet.next(), .Jupiter)
+        XCTAssertEqual(planet.rawValue, 1)
+        XCTAssertEqual(Planet("Mercury"), .Mercury)
+        XCTAssertEqual(planet.surfaceGravity, 9.8, accuracy: 0.1)
+        XCTAssertEqual(Direction.North.opposite, .South)
+    }
+}
+
+// MARK: - Generics & collections
+
+final class GenericsTests: XCTestCase {
+
+    func testGenericsAreErased() {
+        let box = boxOf(value: "text")
+        XCTAssertEqual(box.value as? String, "text")
+        let mapped = box.map { Int32(($0 as! String).count) }
+        XCTAssertEqual(mapped.value as? Int32, 4)
+        XCTAssertNil(firstOrNull(items: []))
+    }
+
+    func testGenericFunctionsAcceptSwiftValues() {
+        XCTAssertEqual(TypeChecker.shared.checkType(input: "str"), .IsString)
+        XCTAssertEqual(TypeChecker.shared.checkType(input: Int32(1)), .IsInt)
+        XCTAssertEqual(TypeChecker.shared.checkType(input: [1, 2, 3]), .IsList)
+    }
+}
+
+final class CollectionsTests: XCTestCase {
+
+    func testCollectionsAreSwiftCollections() {
+        XCTAssertEqual(fibonacci(count: 7), [0, 1, 1, 2, 3, 5, 8])
+        XCTAssertEqual(uniqueWords(text: "Swift Kotlin swift"), ["swift", "kotlin"])
+        XCTAssertEqual(wordLengths(words: ["Kotlin", "Swift"]), ["Kotlin": 6, "Swift": 5])
+        XCTAssertEqual(nestedLists(), [[1, 2], nil, [3]])
+    }
+
+    func testRanges() {
+        XCTAssertEqual(digits(), 0...9)
+        XCTAssertTrue(isAdult(age: 18))
+    }
+}
+
+// MARK: - Operators & extensions
+
+final class OperatorsTests: XCTestCase {
+
+    func testArithmeticAndComparison() {
+        let a = Vector(x: 1, y: 2)
+        let b = Vector(x: 3, y: 4)
+        XCTAssertEqual((a + b).x, 4)
+        XCTAssertEqual((b - a).y, 2)
+        XCTAssertEqual((a * 2).y, 4)
+        XCTAssertEqual((-a).x, -1)
+        XCTAssertTrue(a < b)
+    }
+
+    func testSubscriptsAndContains() {
+        let grid = Grid(width: 2, height: 2)
+        grid[3] = 7
+        XCTAssertEqual(grid[3], 7)
+        XCTAssertTrue(grid.contains(value: 7))
+    }
+
+    func testInvokeAndInfix() {
+        let triple = Multiplier(factor: 3)
+        XCTAssertEqual(triple(value: 5), 15)
+        XCTAssertEqual(Int32(2).power(exponent: 10), 1024)
+    }
+}
+
+final class ExtensionsTests: XCTestCase {
+
+    func testExtensionsOnSwiftTypes() {
+        XCTAssertEqual("hello".shout(), "HELLO!")
+        XCTAssertEqual("ab".repeated(times: 3), "ababab")
+        XCTAssertEqual("Kotlin and Swift".wordCount, 3)
+        XCTAssertTrue(Int32(4).isEven())
+        let missing: String? = nil
+        XCTAssertEqual(missing.orDefault(), "default")
+    }
+}
+
+// MARK: - Functions
+
+final class FunctionTypesTests: XCTestCase {
+
+    func testClosures() {
+        XCTAssertEqual(applyTwice(value: 3) { $0 * $0 }, 81)
+        XCTAssertEqual(makeMultiplier(factor: 4)(5), 20)
+        XCTAssertEqual(transformAll(items: ["a", "b"]) { $0.uppercased() }, ["A", "B"])
+    }
+
+    func testSwiftImplementationOfKotlinDependency() {
+        let platform = Platform(md5hasher: { "hash of \($0)" })
+        XCTAssertEqual(reverseImportExample(platform: platform), "hash of example")
+    }
+}
+
+final class ExceptionsTests: XCTestCase {
+
+    func testThrowingFunctions() throws {
+        XCTAssertEqual(try parseAge(input: "42"), 42)
+        // Kotlin exceptions are Swift errors
+        XCTAssertThrowsError(try parseAge(input: "-1")) { error in
+            XCTAssertEqual((error as? ValidationException)?.message, "Age cannot be negative")
+        }
+    }
+
+    func testThrowingConstructors() {
+        XCTAssertThrowsError(try PositiveNumber(value: -1))
+    }
+}
+
+// MARK: - Coroutines
+
+final class CoroutinesTests: XCTestCase {
+
+    func testSuspendFunctionsAreAsync() async throws {
         let users = try await UsersViewModel().loadUsers()
         XCTAssertEqual(users.map(\.name), ["John Doe", "Jane Doe"])
     }
-}
 
-final class ModuleATests: XCTestCase {
-
-    func testModuleAClass() {
-        XCTAssertEqual(ClassFromA(name: "A").hello(), "Hello from A")
-        XCTAssertEqual(useClassFromA().hello(), "Hello from class_A")
+    func testFlowsAreAsyncSequences() async throws {
+        var names: [String] = []
+        for try await user in UsersViewModel().users.asAsyncSequence() {
+            names.append(user.name)
+        }
+        XCTAssertEqual(names, ["John Doe", "Jane Doe"])
     }
 
-    func testIosSpecificApi() {
-        XCTAssertEqual(iosModuleABar(), 54321)
-    }
-}
-
-final class ModuleBTests: XCTestCase {
-
-    func testModuleBClass() {
-        XCTAssertEqual(ClassFromB(name: "B").hello(), "Hello from B")
-        XCTAssertEqual(useClassFromB().hello(), "Hello from class_B")
+    func testStateFlowValue() {
+        let viewModel = UsersViewModel()
+        XCTAssertNil(viewModel.selected.value)
+        viewModel.select(user: User(name: "Jane", age: 25))
+        XCTAssertEqual(viewModel.selected.value?.name, "Jane")
     }
 
-    func testIosSpecificApi() {
-        XCTAssertEqual(iosModuleBBar(), 12345)
+    func testSuspendFunctionTypes() async throws {
+        let result = try await UsersViewModel().withLoading {
+            try await Task.sleep(for: .milliseconds(10))
+            return "from Swift"
+        }
+        XCTAssertEqual(result, "Loaded: from Swift")
     }
-}
 
-final class ModuleCTests: XCTestCase {
-
-    func testExposedImplementationDependency() {
-        XCTAssertEqual(moduleCFunction(), 7)
-        let tracker = analytics()
-        tracker.track(event: Event(name: "test", properties: [:]))
-        XCTAssertEqual(tracker.trackedEvents().map(\.name), ["test"])
+    func testCancellationIsPropagatedToKotlin() async throws {
+        let cancelled = expectation(description: "Kotlin coroutine is cancelled")
+        let task = Task {
+            try await waitForever { cancelled.fulfill() }
+        }
+        try await Task.sleep(for: .milliseconds(100))
+        task.cancel()
+        do {
+            try await task.value
+            XCTFail("Expected CancellationError")
+        } catch {
+            XCTAssertTrue(error is CancellationError)
+        }
+        await fulfillment(of: [cancelled], timeout: 1)
     }
 }
