@@ -9,6 +9,9 @@ import ModuleC
 import KotlinStdlib
 
 struct ContentView: View {
+    @State private var viewModel = UsersViewModel()
+    @State private var isShowingFlow = false
+
     var body: some View {
         NavigationStack {
             List {
@@ -17,10 +20,19 @@ struct ContentView: View {
                 TypesSection()
                 EnumsAndSealedSection()
                 FunctionsSection()
-                CoroutinesSection()
+                CoroutinesSection(viewModel: viewModel, isShowingFlow: $isShowingFlow)
                 PlatformSection()
             }
             .navigationTitle(SAMPLE_NAME)
+        }
+        // Presented from outside the List: a sheet attached to a List section is
+        // dismissed when the List rebuilds that section, for example after a load
+        .sheet(isPresented: $isShowingFlow) {
+            UsersFlowView(viewModel: viewModel)
+                #if os(macOS)
+                // A List has no ideal size, so give the macOS sheet one
+                .frame(minWidth: 320, minHeight: 280)
+                #endif
         }
     }
 }
@@ -203,10 +215,10 @@ struct FunctionsSection: View {
 // MARK: - Coroutines
 
 struct CoroutinesSection: View {
-    @State private var viewModel = UsersViewModel()
+    let viewModel: UsersViewModel
+    @Binding var isShowingFlow: Bool
     @State private var users: Result<[User], Error>?
     @State private var items: Result<[String], Error>?
-    @State private var isShowingFlow = false
 
     var body: some View {
         Section("Coroutines") {
@@ -227,13 +239,6 @@ struct CoroutinesSection: View {
             async let loadedItems = load { try await fetchAll(repository: SwiftRepository(), ids: [1, 2]) }
             users = await loadedUsers
             items = await loadedItems
-        }
-        .sheet(isPresented: $isShowingFlow) {
-            UsersFlowView(viewModel: viewModel)
-                #if os(macOS)
-                // A List has no ideal size, so give the macOS sheet one
-                .frame(minWidth: 320, minHeight: 280)
-                #endif
         }
     }
 
