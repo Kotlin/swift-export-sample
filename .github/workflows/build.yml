@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ios:
-    name: Build iOS simulator app
+  build-xcode:
+    name: Build iOS and macOS apps
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -32,6 +32,16 @@ jobs:
           -scheme iosApp \
           -sdk iphonesimulator \
           -arch arm64 \
+          -derivedDataPath ./build \
+          CODE_SIGNING_ALLOWED=NO
+
+      - name: Build macOS app
+        run: |
+          xcodebuild build \
+          -project iosApp/iosApp.xcodeproj \
+          -configuration Debug \
+          -scheme iosApp \
+          -destination 'platform=macOS,arch=arm64' \
           -derivedDataPath ./build \
           CODE_SIGNING_ALLOWED=NO
 

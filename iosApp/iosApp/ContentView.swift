@@ -61,6 +61,7 @@ struct ClassesSection: View {
             } label: {
                 Row("Object", "Counter.shared.value = \(counter), tap to increment")
             }
+            .buttonStyle(.borderless)
             Row("Companion object", "100 °C = \(Temperature.Companion.shared.fromCelsius(value: 100).fahrenheit) °F")
             let point = Point(x: 1, y: 2)
             Row("Data class", "\(point.copy(x: 3, y: 4)), equal: \(point == Point(x: 1, y: 2))")
@@ -208,6 +209,7 @@ struct CoroutinesSection: View {
             Button("Collect Flow") {
                 isShowingFlow = true
             }
+            .buttonStyle(.borderless)
         }
         .task {
             guard users == nil else { return }
@@ -295,9 +297,13 @@ struct UsersFlowView: View {
 struct PlatformSection: View {
     var body: some View {
         Section("Platform") {
-            // Declared in iosMain, and only available on iOS
+            // Each platform gets the API from its own source set
+            #if os(iOS)
             Row("iosMain", platformName())
             Row("UIKit type", currentDevice().model)
+            #elseif os(macOS)
+            Row("macosMain", platformName())
+            #endif
         }
     }
 }

@@ -4,7 +4,7 @@
 
 This project shows how to export Kotlin Multiplatform code to Swift with Swift Export. It uses the `export.swift {}` DSL and the Swift package export added in Kotlin 2.5.0, exports several Gradle modules, and shows what each Kotlin language feature looks like on the Swift side.
 
-The Kotlin code has two consumers. An iOS app gets it through the Xcode integration, and a plain Swift package depends on the exported Swift package.
+The Kotlin code has two consumers. An iOS and macOS app gets it through the Xcode integration, and a plain Swift package depends on the exported Swift package.
 
 ## ⚠️ Experimental feature notice
 
@@ -17,7 +17,7 @@ The Kotlin code has two consumers. An iOS app gets it through the Xcode integrat
 - `:module-b` - A Kotlin library with no Swift Export configuration at all. `:shared` decides how it appears in Swift (`ModuleB`). This is what a consumer does when a library says nothing about itself.
 - `:module-c` - An `implementation` dependency of `:shared`. By default, Swift would only get the types that the `Shared` API uses. `:shared` exports the whole module as `ModuleC` with `SwiftExportVisibility.EXPOSED`.
 - `:module-d` - Another `implementation` dependency, hidden from Swift with `SwiftExportVisibility.HIDDEN`. `Shared` has a class that inherits from its `Engine`, so Swift gets `Engine` as an empty stub with no members.
-- `iosApp` - A SwiftUI app. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app's only screen lists the features with live results.
+- `iosApp` - A SwiftUI app for iOS and macOS, built from a single multiplatform Xcode target. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app's only screen lists the features with live results.
 - `spm-consumer` - A plain Swift package that depends on the package produced by `:shared:exportDebugSwiftPackage`. It has a small executable and the language feature tests, which run on macOS with `swift test`.
 
 `kotlinx-coroutines-core` is a plain `implementation` dependency of `:shared` and shows the default behavior. It gets its own `OrgJetbrainsKotlinxKotlinxCoroutinesCore` Swift module, which contains only the declarations the `Shared` API refers to, such as `Flow`.
@@ -192,7 +192,7 @@ The Kotlin API of `:shared` is split into one file per topic. Comments in each f
 | `nested/NestedPackage.kt` | `BasicsTests.swift` | Packages outside of `rootPackage` as Swift namespaces |
 | `iosMain`, `macosMain` | `iosApp/Tests/Tests.swift`, `ModulesTests.swift` | Platform-specific API, UIKit and Foundation types |
 
-`iosApp/Tests/Tests.swift` runs the same checks with XCTest against the modules that `embedSwiftExportForXcode` embeds in the app.
+`iosApp/Tests/Tests.swift` runs the same checks with XCTest against the modules that `embedSwiftExportForXcode` embeds in the app, on both iOS and macOS. The UIKit checks only run on iOS.
 
 A declaration that needs an opt-in in Kotlin is only visible to Swift through an SPI import. The SPI name is the annotation's fully qualified name, with `$` in place of the dots:
 
@@ -213,14 +213,16 @@ Some things don't map to Swift yet. The sample runs into these:
 
 ## Getting started
 
-### Running the iOS app
+### Running the app
 
-You need Xcode 16 or later (for the iOS 18 SDK) and a JDK. CI uses JDK 21.
+You need Xcode 16 or later (for the iOS 18 and macOS 15 SDKs) and a JDK. CI uses JDK 21.
 
 1. Clone this repository.
 2. Open `iosApp/iosApp.xcodeproj` in Xcode.
-3. Build and run the `iosApp` scheme. The Run Script build phase calls `./gradlew :shared:embedSwiftExportForXcode`, so there is nothing to build by hand first.
+3. Pick an iOS simulator or **My Mac** as the run destination, then build and run the `iosApp` scheme. The Run Script build phase calls `./gradlew :shared:embedSwiftExportForXcode`, which builds the Kotlin code for the selected platform, so there is nothing to build by hand first.
 4. Run the tests with **Product > Test**.
+
+The macOS build is signed to run locally, so it doesn't need a development team. The iOS simulator build doesn't need one either. To run on an iPhone, set `TEAM_ID` in `iosApp/Configuration/Config.xcconfig`.
 
 ### Consuming the Swift package
 

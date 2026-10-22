@@ -1,12 +1,14 @@
 import XCTest
+#if canImport(UIKit)
 import UIKit
+#endif
 // Declarations that require an opt-in in Kotlin are Swift SPI
 @_spi(com$github$jetbrains$swiftexport$ExperimentalSampleApi) import Shared
 import ModuleA
 import ModuleB
 import ModuleC
 
-// These tests run against the modules embedded into the app by `embedSwiftExportForXcode`.
+// These tests run on iOS and macOS against the modules embedded into the app by `embedSwiftExportForXcode`.
 // spm-consumer/Tests checks the same features against the exported Swift package.
 
 // MARK: - Modules
@@ -18,7 +20,9 @@ final class ModulesTests: XCTestCase {
         XCTAssertEqual(ClassFromA(name: "A").hello(), "Hello from A")
         XCTAssertEqual(moduleAFunction(), 5)
         XCTAssertEqual(useClassFromA().hello(), "Hello from class_A")
+        #if os(iOS)
         XCTAssertEqual(iosModuleABar(), 54321)
+        #endif
     }
 
     func testConsumerConfiguredModule() {
@@ -26,7 +30,9 @@ final class ModulesTests: XCTestCase {
         XCTAssertEqual(ClassFromB(name: "B").hello(), "Hello from B")
         XCTAssertEqual(moduleBFunction(), 10)
         XCTAssertEqual(useClassFromB().hello(), "Hello from class_B")
+        #if os(iOS)
         XCTAssertEqual(iosModuleBBar(), 12345)
+        #endif
     }
 
     func testExposedImplementationDependency() {
@@ -57,6 +63,7 @@ final class ModulesTests: XCTestCase {
 
 final class PlatformTests: XCTestCase {
 
+    #if os(iOS)
     func testIosMainDeclarations() {
         XCTAssertEqual(iosBar(), 125)
         XCTAssertTrue(platformName().hasPrefix(UIDevice.current.systemName))
@@ -67,6 +74,11 @@ final class PlatformTests: XCTestCase {
         let device: UIDevice = currentDevice()
         XCTAssertEqual(device.model, UIDevice.current.model)
     }
+    #elseif os(macOS)
+    func testMacosMainDeclarations() {
+        XCTAssertTrue(platformName().hasPrefix("macOS"))
+    }
+    #endif
 }
 
 // MARK: - Basics
