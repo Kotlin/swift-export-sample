@@ -243,7 +243,7 @@ swift test --package-path spm-consumer
 
 ### Continuous integration
 
-`.github/workflows/build.yml` runs two jobs on pushes and pull requests to `master`. One runs the app's XCTests on an iOS simulator and on macOS. The other exports the Swift package and runs `swift test` and `swift run` in `spm-consumer`.
+`.github/workflows/build.yml` runs two jobs on pushes and pull requests to `master`. One builds the app and its XCTests for the iOS simulator and for macOS, but doesn't run the XCTests, because GitHub's macOS runners don't reliably have a matching iOS simulator. The other exports the Swift package and runs `swift test` and `swift run` in `spm-consumer`, so the language feature tests run on every change. Run the XCTests locally with **Product > Test**.
 
 ### Working with AI coding agents
 
