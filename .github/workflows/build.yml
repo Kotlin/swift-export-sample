@@ -27,9 +27,9 @@ jobs:
       - name: Build iOS simulator app
         run: |
           xcodebuild build \
-          -project iosApp/iosApp.xcodeproj \
+          -project appleApp/appleApp.xcodeproj \
           -configuration Debug \
-          -scheme iosApp \
+          -scheme appleApp \
           -sdk iphonesimulator \
           -arch arm64 \
           -derivedDataPath ./build \
@@ -38,9 +38,9 @@ jobs:
       - name: Build macOS app
         run: |
           xcodebuild build \
-          -project iosApp/iosApp.xcodeproj \
+          -project appleApp/appleApp.xcodeproj \
           -configuration Debug \
-          -scheme iosApp \
+          -scheme appleApp \
           -destination 'platform=macOS,arch=arm64' \
           -derivedDataPath ./build \
           CODE_SIGNING_ALLOWED=NO

@@ -17,7 +17,7 @@ The Kotlin code has two consumers. An iOS and macOS app gets it through the Xcod
 - `:module-b` - A Kotlin library with no Swift Export configuration at all. `:shared` decides how it appears in Swift (`ModuleB`). This is what a consumer does when a library says nothing about itself.
 - `:module-c` - An `implementation` dependency of `:shared`. By default, Swift would only get the types that the `Shared` API uses. `:shared` exports the whole module as `ModuleC` with `SwiftExportVisibility.EXPOSED`.
 - `:module-d` - Another `implementation` dependency, hidden from Swift with `SwiftExportVisibility.HIDDEN`. `Shared` has a class that inherits from its `Engine`, so Swift gets `Engine` as an empty stub with no members.
-- `iosApp` - A SwiftUI app for iOS and macOS, built from a single multiplatform Xcode target. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app's only screen lists the features with live results.
+- `appleApp` - A SwiftUI app for iOS and macOS, built from a single multiplatform Xcode target. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app's only screen lists the features with live results.
 - `spm-consumer` - A plain Swift package that depends on the package produced by `:shared:exportDebugSwiftPackage`. It has a small executable and the language feature tests, which run on macOS with `swift test`.
 
 `kotlinx-coroutines-core` is a plain `implementation` dependency of `:shared` and shows the default behavior. It gets its own `OrgJetbrainsKotlinxKotlinxCoroutinesCore` Swift module, which contains only the declarations the `Shared` API refers to, such as `Flow`.
@@ -190,9 +190,9 @@ The Kotlin API of `:shared` is split into one file per topic. Comments in each f
 | `Exceptions.kt` | `ExceptionsTests.swift` | `@Throws` functions and constructors as Swift `throws` |
 | `Annotations.kt` | `AnnotationsTests.swift`, `ClassesTests.swift` | KDoc as Swift documentation comments, `@ObjCName`, `@HiddenFromObjC`, `@Deprecated` as `@available(*, deprecated)`, `@RequiresOptIn` as Swift SPI |
 | `nested/NestedPackage.kt` | `BasicsTests.swift` | Packages outside of `rootPackage` as Swift namespaces |
-| `iosMain`, `macosMain` | `iosApp/Tests/Tests.swift`, `ModulesTests.swift` | Platform-specific API, UIKit and Foundation types |
+| `iosMain`, `macosMain` | `appleApp/Tests/Tests.swift`, `ModulesTests.swift` | Platform-specific API, UIKit and Foundation types |
 
-`iosApp/Tests/Tests.swift` runs the same checks with XCTest against the modules that `embedSwiftExportForXcode` embeds in the app, on both iOS and macOS. The UIKit checks only run on iOS.
+`appleApp/Tests/Tests.swift` runs the same checks with XCTest against the modules that `embedSwiftExportForXcode` embeds in the app, on both iOS and macOS. The UIKit checks only run on iOS.
 
 A declaration that needs an opt-in in Kotlin is only visible to Swift through an SPI import. The SPI name is the annotation's fully qualified name, with `$` in place of the dots:
 
@@ -209,7 +209,7 @@ Some things don't map to Swift yet. The sample runs into these:
 - Data classes get `copy`, but no `componentN` functions. `==`, `hashValue` and `description` come from `NSObject`, which Kotlin wires to `equals`, `hashCode` and `toString`.
 - Mutable collections and arrays stay Kotlin types rather than Swift collections (`mutableNames()`). `compareTo` gives you `<` and `>`, but no `Comparable` conformance.
 - A Swift class that implements a Kotlin interface must inherit from an exported Kotlin class (`GreetingBase`), because `KotlinBase` can't be instantiated from Swift ([KT-88251](https://youtrack.jetbrains.com/issue/KT-88251)).
-- Swift names can clash with SDK names. SwiftUI also declares `Shape`, so `iosApp` writes `Shared.Shape`.
+- Swift names can clash with SDK names. SwiftUI also declares `Shape`, so `appleApp` writes `Shared.Shape`.
 
 ## Getting started
 
@@ -218,11 +218,11 @@ Some things don't map to Swift yet. The sample runs into these:
 You need Xcode 16 or later (for the iOS 18 and macOS 15 SDKs) and a JDK. CI uses JDK 21.
 
 1. Clone this repository.
-2. Open `iosApp/iosApp.xcodeproj` in Xcode.
-3. Pick an iOS simulator or **My Mac** as the run destination, then build and run the `iosApp` scheme. The Run Script build phase calls `./gradlew :shared:embedSwiftExportForXcode`, which builds the Kotlin code for the selected platform, so there is nothing to build by hand first.
+2. Open `appleApp/appleApp.xcodeproj` in Xcode.
+3. Pick an iOS simulator or **My Mac** as the run destination, then build and run the `appleApp` scheme. The Run Script build phase calls `./gradlew :shared:embedSwiftExportForXcode`, which builds the Kotlin code for the selected platform, so there is nothing to build by hand first.
 4. Run the tests with **Product > Test**.
 
-The macOS build is signed to run locally, so it doesn't need a development team. The iOS simulator build doesn't need one either. To run on an iPhone, set `TEAM_ID` in `iosApp/Configuration/Config.xcconfig`.
+The macOS build is signed to run locally, so it doesn't need a development team. The iOS simulator build doesn't need one either. To run on an iPhone, set `TEAM_ID` in `appleApp/Configuration/Config.xcconfig`.
 
 ### Consuming the Swift package
 
