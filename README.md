@@ -224,6 +224,13 @@ You need Xcode 16 or later (for the iOS 18 and macOS 15 SDKs) and a JDK. CI uses
 
 The macOS build is signed to run locally, so it doesn't need a development team. The iOS simulator build doesn't need one either. To run on an iPhone, set `TEAM_ID` in `appleApp/Configuration/Config.xcconfig`.
 
+The project follows the current Xcode multiplatform app template, with two deliberate differences:
+
+- User script sandboxing is off for the `appleApp` target, because the Run Script phase runs Gradle, which reads and writes outside the sandbox.
+- Default main actor isolation is off. The generated Kotlin declarations are nonisolated, so with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` every Swift override of a Kotlin member fails to compile ("different actor isolation from nonisolated overridden declaration").
+
+The project turns on `MemberImportVisibility`, so a Swift file has to import every module whose members it uses. Members that Kotlin classes inherit from the standard library, such as `Throwable.message`, come from `KotlinStdlib`, so the app imports it explicitly.
+
 ### Consuming the Swift package
 
 Export the package first, then build and test the consumer:

@@ -7,6 +7,10 @@ import UIKit
 import ModuleA
 import ModuleB
 import ModuleC
+// The stub of the hidden :module-d Engine class is declared in ModuleD
+import ModuleD
+// Members inherited from stdlib classes, such as Throwable.message, live in KotlinStdlib
+import KotlinStdlib
 
 // These tests run on iOS and macOS against the modules embedded into the app by `embedSwiftExportForXcode`.
 // spm-consumer/Tests checks the same features against the exported Swift package.

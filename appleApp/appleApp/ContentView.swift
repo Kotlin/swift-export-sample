@@ -5,6 +5,8 @@ import CryptoKit
 import ModuleA
 import ModuleB
 import ModuleC
+// Members inherited from stdlib classes, such as Throwable.message, live in KotlinStdlib
+import KotlinStdlib
 
 struct ContentView: View {
     var body: some View {
