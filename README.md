@@ -105,7 +105,7 @@ kotlin {
 }
 ```
 
-`:module-b` and `:module-c` have no Swift Export configuration at all. Their module names and root packages come from the `configure(...)` overrides in `:shared`.
+`:module-b`, `:module-c` and `:module-d` have no Swift Export configuration of their own. `:shared` configures them with the `configure(...)` overrides. `:module-d` keeps the derived module name, `ModuleD`.
 
 ## How the new DSL works
 
@@ -168,8 +168,6 @@ In Xcode, use **File > Add Package Dependencies… > Add Local…**, select `sha
 
 In Kotlin 2.5.0, you can't combine Swift package export with `swiftPMDependencies {}`. Support for this combination is planned for Kotlin 2.5.20.
 
-To use a Swift-only API from Kotlin, declare a function type in Kotlin and let Swift provide the implementation as a closure. `FunctionTypes.kt` declares an MD5 hasher this way, and the Swift side implements it with CryptoKit.
-
 ## Language features
 
 The Kotlin API of `:shared` is split into one file per topic. Comments in each file say what the declarations turn into in Swift. The tests in `spm-consumer/Tests/SwiftExportTests` call them from Swift.
@@ -200,6 +198,8 @@ A declaration that needs an opt-in in Kotlin is only visible to Swift through an
 @_spi(com$github$jetbrains$swiftexport$ExperimentalSampleApi) import Shared
 ```
 
+To use a Swift-only API from Kotlin, declare a function type in Kotlin and let Swift provide the implementation as a closure. `FunctionTypes.kt` declares an MD5 hasher this way, and the Swift side implements it with CryptoKit.
+
 ### Known limitations
 
 Some things don't map to Swift yet. The sample runs into these:
@@ -215,7 +215,7 @@ Some things don't map to Swift yet. The sample runs into these:
 
 ### Running the app
 
-You need Xcode 16 or later (for the iOS 18 and macOS 15 SDKs) and a JDK. CI uses JDK 21.
+You need Xcode 16 or later and a JDK. Xcode 16 is the first version that opens the project format and has the iOS 18 and macOS 15 SDKs. The sample is developed with Xcode 27, and CI uses JDK 21.
 
 1. Clone this repository.
 2. Open `appleApp/appleApp.xcodeproj` in Xcode.
@@ -240,6 +240,10 @@ Export the package first, then build and test the consumer:
 swift run --package-path spm-consumer
 swift test --package-path spm-consumer
 ```
+
+### Continuous integration
+
+`.github/workflows/build.yml` runs two jobs on pushes and pull requests to `master`. One runs the app's XCTests on an iOS simulator and on macOS. The other exports the Swift package and runs `swift test` and `swift run` in `spm-consumer`.
 
 ## Learn more
 

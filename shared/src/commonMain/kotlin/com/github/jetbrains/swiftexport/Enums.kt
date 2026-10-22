@@ -15,7 +15,7 @@ enum class Planet(val massKg: Double, val radiusM: Double) {
 enum class Direction {
     North, East, South, West;
 
-    // Abstract members and per-entry overrides work as well
+    // Members of the enum class are members of the Swift enum
     val opposite: Direction
         get() = when (this) {
             North -> South

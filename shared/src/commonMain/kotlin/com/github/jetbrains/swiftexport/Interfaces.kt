@@ -28,7 +28,8 @@ open class GreetingBase
 
 fun greetEveryone(greetings: List<Greeting>, name: String): List<String> = greetings.map { it.greet(name) }
 
-// Functional interfaces: `invoke`-style calls and a Swift closure-based factory
+// Functional interfaces become protocols, plus a `validator(function:)` factory
+// that turns a Swift closure into an implementation
 fun interface Validator {
     fun validate(input: String): Boolean
 }

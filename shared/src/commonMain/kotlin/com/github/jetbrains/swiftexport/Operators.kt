@@ -15,7 +15,7 @@ class Vector(val x: Double, val y: Double) {
     override fun toString(): String = "Vector($x, $y)"
 }
 
-// get/set become a Swift subscript, contains becomes `contains(other:)` and `~=`
+// get/set become a Swift subscript, contains becomes `contains(value:)` and `~=`
 class Grid(val width: Int, val height: Int) {
     private val cells = IntArray(width * height)
 
