@@ -23,6 +23,11 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5.0.0
+        with:
+          # Publishes a Build Scan to scans.gradle.com for every Gradle build in the job
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
+          build-scan-terms-of-use-agree: "yes"
 
       - name: Test on iOS simulator
         run: |
@@ -65,6 +70,11 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5.0.0
+        with:
+          # Publishes a Build Scan to scans.gradle.com for every Gradle build in the job
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
+          build-scan-terms-of-use-agree: "yes"
 
       - name: Export Swift package
         run: ./gradlew :shared:exportDebugSwiftPackage
