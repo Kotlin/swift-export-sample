@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ios:
-    name: Build iOS simulator app
+  build-xcode:
+    name: Build iOS and macOS apps
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -23,14 +23,60 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5.0.0
+        with:
+          # Publishes a Build Scan to scans.gradle.com for every Gradle build in the job
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
+          build-scan-terms-of-use-agree: "yes"
 
-      - name: Build iOS simulator app
+      # GitHub's macOS runners don't reliably have an iOS simulator for the current Xcode,
+      # so CI builds the app and its XCTests without running them.
+      # The language feature tests run in the swift-package job.
+      - name: Build for iOS simulator
         run: |
-          xcodebuild build \
-          -project iosApp/iosApp.xcodeproj \
-          -configuration Debug \
-          -scheme iosApp \
+          xcodebuild build-for-testing \
+          -project appleApp/appleApp.xcodeproj \
+          -scheme appleApp \
           -sdk iphonesimulator \
           -arch arm64 \
           -derivedDataPath ./build \
           CODE_SIGNING_ALLOWED=NO
+
+      - name: Build for macOS
+        run: |
+          xcodebuild build-for-testing \
+          -project appleApp/appleApp.xcodeproj \
+          -scheme appleApp \
+          -destination 'platform=macOS,arch=arm64' \
+          -derivedDataPath ./build \
+          CODE_SIGNING_ALLOWED=NO
+
+  swift-package:
+    name: Export Swift package and test it with SwiftPM
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5.0.0
+        with:
+          # Publishes a Build Scan to scans.gradle.com for every Gradle build in the job
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
+          build-scan-terms-of-use-agree: "yes"
+
+      - name: Export Swift package
+        run: ./gradlew :shared:exportDebugSwiftPackage
+
+      - name: Run Swift tests
+        run: swift test --package-path spm-consumer
+
+      - name: Run Swift executable
+        run: swift run --package-path spm-consumer

@@ -17,3 +17,7 @@ captures
 !*.xcodeproj/project.xcworkspace/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
+shared/SwiftPackage
+spm-consumer/.build
+.swiftpm
+.swiftpm-locks
