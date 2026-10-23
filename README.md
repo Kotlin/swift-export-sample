@@ -247,7 +247,7 @@ swift test --package-path spm-consumer
 
 ### Working with AI coding agents
 
-[`AGENTS.md`](AGENTS.md) describes the project layout, the commands to verify a change, and the Swift Export pitfalls this sample has run into. Codex and Cursor read it directly, and `CLAUDE.md` points Claude Code to it.
+[`AGENTS.md`](AGENTS.md) has the commands to verify a change and the Swift Export pitfalls this sample has run into. [`shared/AGENTS.md`](shared/AGENTS.md) and [`appleApp/AGENTS.md`](appleApp/AGENTS.md) add rules for the Kotlin API and the Xcode app, and agents read the file nearest to the code they change. Next to each `AGENTS.md`, a `CLAUDE.md` points Claude Code to it.
 
 ## Learn more
 
