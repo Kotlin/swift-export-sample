@@ -6,9 +6,11 @@ This project shows how to export Kotlin Multiplatform code to Swift with Swift E
 
 The Kotlin code has two consumers. An iOS and macOS app gets it through the Xcode integration, and a plain Swift package depends on the exported Swift package.
 
-## ⚠️ Experimental feature notice
+## Beta feature notice
 
-**Swift Export is an experimental feature and subject to change in any future releases.** It may not function as expected, and you may encounter bugs. This project is an early technology demonstration and is **not production-ready**. Use it at your own risk.
+Swift Export is in [Beta](https://kotlinlang.org/docs/components-stability.html#stability-levels-explained) starting with Kotlin 2.5.0. You can use it, but it isn't finished, so its behavior and the generated Swift API can still change. Watch for deprecation warnings when you update Kotlin, and report issues in [YouTrack](https://kotl.in/issue).
+
+The Gradle DSL is still marked with `@ExperimentalSwiftExportDsl`. Without `@OptIn(ExperimentalSwiftExportDsl::class)`, Gradle warns that the API is experimental, so the build scripts in this sample opt in.
 
 ## Project structure
 
@@ -136,6 +138,7 @@ The shorthand is `configure(dependency, SwiftExportVisibility.HIDDEN)`. Visibili
 | `flattenPackage = "..."` | `rootPackage = "..."` |
 | `export(project(":module-a")) { ... }` | Declare `api(projects.moduleA)`; the library configures itself, or the consumer overrides it via `xcodeIntegration { configure(projects.moduleA) { ... } }` |
 | `embedSwiftExportForXcode` registered implicitly | Registered when `xcodeIntegration()` is called |
+| `configure { freeCompilerArgs.add(...) }` | Removed |
 
 ## Swift package export
 
@@ -252,5 +255,6 @@ swift test --package-path spm-consumer
 ## Learn more
 
 - [Interoperability with Swift using Swift export](https://kotlinlang.org/docs/native-swift-export.html)
+- [What's new in Kotlin 2.5.0: Swift export goes Beta with a new Gradle DSL](https://kotlinlang.org/docs/whatsnew-eap.html#swift-export-goes-beta-with-a-new-gradle-dsl)
 - [Moving from SKIE to Swift export in a Kotlin Multiplatform project](https://johnoreilly.dev/posts/peopleinspace-swift-export/) by John O'Reilly
 - [Kotlin Multiplatform documentation](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)

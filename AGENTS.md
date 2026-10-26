@@ -36,6 +36,7 @@ The public Kotlin Swift Export sample. It shows how Kotlin Multiplatform code is
 ## Swift Export pitfalls
 
 - The sample targets Kotlin 2.5.0-Beta2. A feature on Kotlin `master` may not exist in that version yet.
+- Swift Export is Beta, but its Gradle DSL is still marked `@ExperimentalSwiftExportDsl`, and Gradle warns without `@OptIn(ExperimentalSwiftExportDsl::class)`. Keep the opt-in in build scripts, even though the Kotlin docs examples leave it out.
 - Kotlin can't call Swift-only APIs. Declare a function type or interface in Kotlin and let Swift implement it (see `FunctionTypes.kt`).
 - Swift package export can't be combined with `swiftPMDependencies {}` in 2.5.0. Support is planned for 2.5.20.
 - A Swift class that implements a Kotlin interface must inherit from an exported Kotlin class, because `KotlinBase` can't be instantiated from Swift (KT-88251).
