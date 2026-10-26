@@ -2,7 +2,7 @@
 
 ## Project overview
 
-The public Kotlin Swift Export sample. It shows how Kotlin Multiplatform code is exported to Swift with the `export.swift {}` DSL and the Swift package export from Kotlin 2.5.0. People read it to learn Swift Export, so code must be correct, small and easy to follow. `README.md` explains the DSL and every feature the sample covers.
+The public Kotlin Swift export sample. It shows how Kotlin Multiplatform code is exported to Swift with the `export.swift {}` DSL and the Swift package export from Kotlin 2.5.0. People read it to learn Swift export, so code must be correct, small and easy to follow. `README.md` explains the DSL and every feature the sample covers.
 
 - `shared/` - The umbrella Kotlin module, exported as the `Shared` Swift module. See `shared/AGENTS.md`.
 - `module-a/` to `module-d/` - Kotlin libraries that show how dependencies are exported (library-configured, consumer-configured, `EXPOSED`, `HIDDEN`).
@@ -25,7 +25,7 @@ The public Kotlin Swift Export sample. It shows how Kotlin Multiplatform code is
 
 `swift test` uses the package from the last export, so export again after every Kotlin change. The Xcode build runs Gradle itself. A Kotlin API change needs all of the commands above.
 
-## Adding a Swift Export feature
+## Adding a Swift export feature
 
 1. Add the Kotlin declarations to the matching topic file in `shared/`.
 2. Read the generated Swift signature in `shared/SwiftPackage/Debug/Sources/<Module>/<Module>.swift` before writing Swift against it. Argument labels, optionality and namespaces are easy to guess wrong.
@@ -33,10 +33,10 @@ The public Kotlin Swift Export sample. It shows how Kotlin Multiplatform code is
 4. If it is visible in a UI, add a row to `appleApp/appleApp/ContentView.swift`.
 5. Update the feature table in `README.md`, and the known limitations if there is one.
 
-## Swift Export pitfalls
+## Swift export pitfalls
 
 - The sample targets Kotlin 2.5.0-Beta2. A feature on Kotlin `master` may not exist in that version yet.
-- Swift Export is Beta, but its Gradle DSL is still marked `@ExperimentalSwiftExportDsl`, and Gradle warns without `@OptIn(ExperimentalSwiftExportDsl::class)`. Keep the opt-in in build scripts, even though the Kotlin docs examples leave it out.
+- Swift export is Beta, but its Gradle DSL is still marked `@ExperimentalSwiftExportDsl`, and Gradle warns without `@OptIn(ExperimentalSwiftExportDsl::class)`. Keep the opt-in in build scripts, even though the Kotlin docs examples leave it out.
 - Kotlin can't call Swift-only APIs. Declare a function type or interface in Kotlin and let Swift implement it (see `FunctionTypes.kt`).
 - Swift package export can't be combined with `swiftPMDependencies {}` in 2.5.0. Support is planned for 2.5.20.
 - A Swift class that implements a Kotlin interface must inherit from an exported Kotlin class, because `KotlinBase` can't be instantiated from Swift (KT-88251).

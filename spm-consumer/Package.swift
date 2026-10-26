@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "SpmConsumer",
     platforms: [
-        // Swift Export requires at least iOS 18 / macOS 15
+        // Swift export requires at least iOS 18 / macOS 15
         .macOS(.v15),
         .iOS(.v18),
     ],
