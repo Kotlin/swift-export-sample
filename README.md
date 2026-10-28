@@ -1,20 +1,22 @@
 [![official project](http://jb.gg/badges/official.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
 
-# Kotlin Swift Export Sample
+# Kotlin Swift export sample
 
-This project shows how to export Kotlin Multiplatform code to Swift with Swift Export. It uses the `export.swift {}` DSL and the Swift package export added in Kotlin 2.5.0, exports several Gradle modules, and shows what each Kotlin language feature looks like on the Swift side.
+This project shows how to export Kotlin Multiplatform code to Swift with Swift export. It uses the `export.swift {}` DSL and the Swift package export added in Kotlin 2.5.0, exports several Gradle modules, and shows what each Kotlin language feature looks like on the Swift side.
 
 The Kotlin code has two consumers. An iOS and macOS app gets it through the Xcode integration, and a plain Swift package depends on the exported Swift package.
 
-## ⚠️ Experimental feature notice
+## Beta feature notice
 
-**Swift Export is an experimental feature and subject to change in any future releases.** It may not function as expected, and you may encounter bugs. This project is an early technology demonstration and is **not production-ready**. Use it at your own risk.
+Swift export is in [Beta](https://kotlinlang.org/docs/components-stability.html#stability-levels-explained) starting with Kotlin 2.5.0. You can use it, and we'll do our best to minimize migration issues, but it isn't finished yet, so changes are still possible. Watch for deprecation warnings when you update Kotlin, and report problems in [YouTrack](https://kotl.in/issue) or the [#swift-export](https://kotlinlang.slack.com/archives/C073GUW6WN9) channel on Kotlin Slack.
+
+The Gradle DSL is still marked with `@ExperimentalSwiftExportDsl`. Without `@OptIn(ExperimentalSwiftExportDsl::class)`, Gradle warns that the API is experimental, so the build scripts in this sample opt in.
 
 ## Project structure
 
 - `:shared` - The umbrella module, exported as the `Shared` Swift module. `xcodeIntegration {}` connects it to Xcode, and `swiftPackageIntegration {}` exports it as a Swift package. It depends on `:module-a` and `:module-b` via `api`, so both become separate Swift modules.
 - `:module-a` - A Kotlin library that describes its own Swift representation (`ModuleA`) in its build script. This is what a library author would do.
-- `:module-b` - A Kotlin library with no Swift Export configuration at all. `:shared` decides how it appears in Swift (`ModuleB`). This is what a consumer does when a library says nothing about itself.
+- `:module-b` - A Kotlin library with no Swift export configuration at all. `:shared` decides how it appears in Swift (`ModuleB`). This is what a consumer does when a library says nothing about itself.
 - `:module-c` - An `implementation` dependency of `:shared`. By default, Swift would only get the types that the `Shared` API uses. `:shared` exports the whole module as `ModuleC` with `SwiftExportVisibility.EXPOSED`.
 - `:module-d` - Another `implementation` dependency, hidden from Swift with `SwiftExportVisibility.HIDDEN`. `Shared` has a class that inherits from its `Engine`, so Swift gets `Engine` as an empty stub with no members.
 - `appleApp` - A SwiftUI app for iOS and macOS, built from a single multiplatform Xcode target. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app's only screen lists the features with live results.
@@ -22,9 +24,9 @@ The Kotlin code has two consumers. An iOS and macOS app gets it through the Xcod
 
 `kotlinx-coroutines-core` is a plain `implementation` dependency of `:shared` and shows the default behavior. It gets its own `OrgJetbrainsKotlinxKotlinxCoroutinesCore` Swift module, which contains only the declarations the `Shared` API refers to, such as `Flow`.
 
-## Swift Export configuration
+## Swift export configuration
 
-Swift Export is configured in `build.gradle.kts` through the `export.swift {}` block inside the `kotlin {}` extension. The legacy `swiftExport {}` block is deprecated in Kotlin 2.5.0 and reports a diagnostic pointing to the new DSL.
+Swift export is configured in `build.gradle.kts` through the `export.swift {}` block inside the `kotlin {}` extension. The legacy `swiftExport {}` block is deprecated in Kotlin 2.5.0 and reports a diagnostic pointing to the new DSL.
 
 ### Umbrella module (`:shared`)
 
@@ -67,7 +69,7 @@ kotlin {
 
 @OptIn(ExperimentalSwiftExportDsl::class)
 fun SwiftExportIntegration.reconfigureDependencies() {
-    // :module-b publishes no Swift Export configuration, so the consumer names it
+    // :module-b publishes no Swift export configuration, so the consumer names it
     configure(projects.moduleB) {
         moduleName = "ModuleB"
         rootPackage = "com.github.jetbrains.moduleb"
@@ -105,7 +107,7 @@ kotlin {
 }
 ```
 
-`:module-b`, `:module-c` and `:module-d` have no Swift Export configuration of their own. `:shared` configures them with the `configure(...)` overrides. `:module-d` keeps the derived module name, `ModuleD`.
+`:module-b`, `:module-c` and `:module-d` have no Swift export configuration of their own. `:shared` configures them with the `configure(...)` overrides. `:module-d` keeps the derived module name, `ModuleD`.
 
 ## How the new DSL works
 
@@ -136,6 +138,7 @@ The shorthand is `configure(dependency, SwiftExportVisibility.HIDDEN)`. Visibili
 | `flattenPackage = "..."` | `rootPackage = "..."` |
 | `export(project(":module-a")) { ... }` | Declare `api(projects.moduleA)`; the library configures itself, or the consumer overrides it via `xcodeIntegration { configure(projects.moduleA) { ... } }` |
 | `embedSwiftExportForXcode` registered implicitly | Registered when `xcodeIntegration()` is called |
+| `configure { freeCompilerArgs.add(...) }` | Removed |
 
 ## Swift package export
 
@@ -247,10 +250,11 @@ swift test --package-path spm-consumer
 
 ### Working with AI coding agents
 
-[`AGENTS.md`](AGENTS.md) has the commands to verify a change and the Swift Export pitfalls this sample has run into. [`shared/AGENTS.md`](shared/AGENTS.md) and [`appleApp/AGENTS.md`](appleApp/AGENTS.md) add rules for the Kotlin API and the Xcode app, and agents read the file nearest to the code they change. Next to each `AGENTS.md`, a `CLAUDE.md` points Claude Code to it.
+[`AGENTS.md`](AGENTS.md) has the commands to verify a change and the Swift export pitfalls this sample has run into. [`shared/AGENTS.md`](shared/AGENTS.md) and [`appleApp/AGENTS.md`](appleApp/AGENTS.md) add rules for the Kotlin API and the Xcode app, and agents read the file nearest to the code they change. Next to each `AGENTS.md`, a `CLAUDE.md` points Claude Code to it.
 
 ## Learn more
 
 - [Interoperability with Swift using Swift export](https://kotlinlang.org/docs/native-swift-export.html)
+- [What's new in Kotlin 2.5.0: Swift export goes Beta with a new Gradle DSL](https://kotlinlang.org/docs/whatsnew-eap.html#swift-export-goes-beta-with-a-new-gradle-dsl)
 - [Moving from SKIE to Swift export in a Kotlin Multiplatform project](https://johnoreilly.dev/posts/peopleinspace-swift-export/) by John O'Reilly
 - [Kotlin Multiplatform documentation](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)

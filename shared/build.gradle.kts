@@ -48,7 +48,7 @@ kotlin {
 
 @OptIn(ExperimentalSwiftExportDsl::class)
 fun SwiftExportIntegration.reconfigureDependencies() {
-    // :module-b publishes no Swift Export configuration, so the consumer names it
+    // :module-b publishes no Swift export configuration, so the consumer names it
     configure(projects.moduleB) {
         // Exported module name
         moduleName = "ModuleB"
