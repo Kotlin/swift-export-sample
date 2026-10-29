@@ -14,31 +14,43 @@ The Gradle DSL is still marked with `@ExperimentalSwiftExportDsl`. Without `@Opt
 
 ## Feature catalog
 
-The app opens on a list of features. Every feature has a Kotlin file in `shared/src/commonMain/kotlin/com/github/jetbrains/swiftexport/` and a screen in `appleApp/appleApp/Features/` with the same name. The Kotlin file starts with a short comment describing what the construct becomes in Swift.
+The app opens on a list of features. The Kotlin API of `:shared` is split into one file per topic, and every topic file `X.kt` in `shared/src/commonMain/kotlin/com/github/jetbrains/swiftexport/` has a demo screen `XView.swift` in `appleApp/appleApp/Features/` with the same name. The Kotlin file starts with a short comment describing what the construct becomes in Swift, and the tests call the same declarations from Swift.
 
-| Section | Feature | Kotlin | Swift screen | What it shows |
-|---|---|---|---|---|
-| Basics | Basics | `Basics.kt` | `BasicsView.swift` | Top-level functions and properties, primitive and unsigned types, nullability, overloads, `vararg` → variadic, `Any`, `@ObjCName(swiftName:)`, missing default arguments and the overload workaround |
-| | Extensions | `Extensions.kt` | `ExtensionsView.swift` | Extension functions and properties → Swift extensions, extensions on nullable types |
-| | Operators | `Operators.kt` | `OperatorsView.swift` | `+`, `*`, `<` from `compareTo`, subscripts from `get`, `~=` from `contains`, `callAsFunction` from `invoke`, `infix` |
-| | Annotations & docs | `Annotations.kt` | `AnnotationsView.swift` | KDoc → Swift documentation, `@Deprecated` → `@available` incl. `DeprecationLevel.ERROR` → unavailable, `@HiddenFromObjC`, `@RequiresOptIn` → SPI |
-| | Context parameters | `ContextParameters.kt` | `ContextParametersView.swift` | Context parameters as leading unlabeled Swift parameters |
-| Type hierarchy | Classes | `Classes.kt` | `ClassesView.swift` | Final classes, nested and inner classes, typealiases, open and abstract classes, Swift subclasses that override open members and call `super`, `object` → `.shared`, companion objects, data and value classes, private constructors |
-| | Interfaces | `Interfaces.kt` | `InterfacesView.swift` | Protocols, default methods, a Swift class implementing a Kotlin interface, `fun interface` |
-| | Enums | `Enums.kt` | `EnumsView.swift` | Native Swift enums, exhaustive `switch`, `allCases`, `rawValue` |
-| | Sealed types | `SealedTypes.kt` | `SealedTypesView.swift` | `sealedType()` → exhaustive `switch`, nested subclasses, `object` subclasses, sealed interfaces |
-| Types | Collections | `Collections.kt` | `CollectionsView.swift` | `List`/`Set`/`Map` → Swift collections, `IntRange` → `ClosedRange`, mutable collections, `ByteArray`, `StringBuilder` |
-| | Generics | `Generics.kt` | `GenericsView.swift` | Erased type parameters, generic classes and functions, Swift values passed as `Any` |
-| | Generic wrappers | `GenericWrappers.kt` | `GenericWrappersView.swift` | A generic `ScreenState<T>` (Loading / Ready / Error) next to a non-generic `ProfileState` wrapper: typed payloads instead of casts, and an API that is exported at all |
-| | Function types | `FunctionTypes.kt` | `FunctionTypesView.swift` | Function types ↔ Swift closures, passing a Swift-only API (CryptoKit) to Kotlin |
-| | Exceptions | `Exceptions.kt` | `ExceptionsView.swift` | `@Throws` → `throws`, catching Kotlin exceptions by type, exception payloads |
-| Concurrency | Coroutines | `Coroutines.kt` | `CoroutinesView.swift` | `suspend` → `async throws`, suspend lambdas, `Flow` → `AsyncSequence`, `StateFlow.value`, setting a `MutableStateFlow` from Swift, cancelling a Swift `Task` cancels the coroutine |
-| | Implementing in Swift | `SwiftImplementation.kt` | `SwiftImplementationView.swift` | A Swift class implementing a Kotlin interface with a `Flow` property and a `suspend fun`, using a Kotlin-provided `MutableStateFlow`; Kotlin code consumes it |
-| Modules | Modules | `Modules.kt`, `:module-a`, `:module-b`, `:module-c`, `:module-d` | `ModulesView.swift` | One Swift module per exported Kotlin module, library vs. consumer configuration, `EXPOSED` dependencies |
-| | Platform code | `Platform.kt`, `Platform.ios.kt`, `Platform.macos.kt` | `PlatformView.swift` | `iosMain`/`macosMain` code and `expect`/`actual` |
-| | Hiding a dependency | `HiddenDependency.kt` | `HiddenDependencyView.swift` | Koin leaked into the public API, and `:module-d`, both hidden with `SwiftExportVisibility.HIDDEN` |
+| Section | Feature | Kotlin file | App screen | Tests | What it shows |
+|---|---|---|---|---|---|
+| Basics | Basics | `Basics.kt` | `BasicsView.swift` | `BasicsTests` | Top-level functions and properties, primitive and unsigned types, nullability, overloads, `vararg` → variadic, `Any`, `Unit`, `Nothing`, `@ObjCName(swiftName:)`, missing default arguments and the overload workaround |
+| | Extensions | `Extensions.kt` | `ExtensionsView.swift` | `ExtensionsTests` | Extension functions and properties → Swift extensions, a property with a setter, extensions on nullable types |
+| | Operators | `Operators.kt` | `OperatorsView.swift` | `OperatorsTests` | `+`, `*`, `<` from `compareTo`, subscripts from `get`, `~=` from `contains`, `callAsFunction` from `invoke`, `infix` |
+| | Annotations & docs | `Annotations.kt` | `AnnotationsView.swift` | `AnnotationsTests` | KDoc → Swift documentation, `@Deprecated` → `@available` incl. `DeprecationLevel.ERROR` → unavailable, `@HiddenFromObjC`, `@RequiresOptIn` → SPI |
+| | Context parameters | `ContextParameters.kt` | `ContextParametersView.swift` | `BasicsTests` | Context parameters as leading unlabeled Swift parameters |
+| Type hierarchy | Classes | `Classes.kt` | `ClassesView.swift` | `ClassesTests` | Final classes, nested and inner classes, typealiases, open and abstract classes, Swift subclasses that override open members and call `super`, `object` → `.shared`, companion objects, data and value classes, private constructors |
+| | Interfaces | `Interfaces.kt` | `InterfacesView.swift` | `InterfacesTests` | Protocols, default methods, a Swift class implementing a Kotlin interface, `fun interface` |
+| | Enums | `Enums.kt` | `EnumsView.swift` | `SealedAndEnumTests` | Native Swift enums, exhaustive `switch`, `allCases`, `rawValue` |
+| | Sealed types | `SealedTypes.kt` | `SealedTypesView.swift` | `SealedAndEnumTests` | `sealedType()` → exhaustive `switch`, nested subclasses, `object` subclasses, sealed interfaces |
+| Types | Collections | `Collections.kt` | `CollectionsView.swift` | `CollectionsTests` | `List`/`Set`/`Map` → Swift collections, `IntRange` → `ClosedRange`, mutable collections, `ByteArray`, `StringBuilder` |
+| | Generics | `Generics.kt` | `GenericsView.swift` | `GenericsTests` | Erased type parameters, generic classes and functions, Swift values passed as `Any` |
+| | Generic wrappers | `GenericWrappers.kt` | `GenericWrappersView.swift` | `GenericWrappersTests` | A generic `ScreenState<T>` (Loading / Ready / Error) next to a non-generic `ProfileState` wrapper: typed payloads instead of casts, and an API that is exported at all |
+| | Function types | `FunctionTypes.kt` | `FunctionTypesView.swift` | `FunctionTypesTests` | Function types ↔ Swift closures, passing a Swift-only API (CryptoKit) to Kotlin |
+| | Exceptions | `Exceptions.kt` | `ExceptionsView.swift` | `ExceptionsTests` | `@Throws` → `throws`, catching Kotlin exceptions by type, exception payloads |
+| Concurrency | Coroutines | `Coroutines.kt` | `CoroutinesView.swift` | `CoroutinesTests` | `suspend` → `async throws`, suspend lambdas, `Flow` → `AsyncSequence`, `StateFlow.value`, setting a `MutableStateFlow` from Swift, cancelling a Swift `Task` cancels the coroutine |
+| | Implementing in Swift | `SwiftImplementation.kt` | `SwiftImplementationView.swift` | `SwiftImplementationTests` | A Swift class implementing a Kotlin interface with a `Flow` property and a `suspend fun`, using a Kotlin-provided `MutableStateFlow`; Kotlin code consumes it |
+| Modules | Modules | `Modules.kt`, `:module-a` to `:module-d` | `ModulesView.swift` | `ModulesTests` | One Swift module per exported Kotlin module, library vs. consumer configuration, `EXPOSED` dependencies, packages outside `rootPackage` as namespaces |
+| | Platform code | `Platform.kt`, `Platform.ios.kt`, `Platform.macos.kt`, `IOSSource.kt`, `MacOSSource.kt` | `PlatformView.swift` | `PlatformTests` | `iosMain`/`macosMain` code, a UIKit type in the API, `expect`/`actual` |
+| | Hiding a dependency | `HiddenDependency.kt` | `HiddenDependencyView.swift` | `HiddenDependencyTests` | Koin leaked into the public API, and `:module-d`, both hidden with `SwiftExportVisibility.HIDDEN` |
+
+Additions to the original per-topic API are tested next to their topic: the `Translator` demo in `TranslatorTests`, `Temperature.freezing`, `StepCounter` and `AppInfo` in `ClassesAdditionsTests`, the `shout(text:)` rename and the `formatPrice(amount:)` overload in `BasicsAdditionsTests`, `Countdown` in `CoroutinesAdditionsTests`, the `Wallet` exception payload in `ExceptionsAdditionsTests`, `evensIn` in `CollectionsAdditionsTests` and `Box.describe` in `GenericsAdditionsTests`. The `expect`/`actual` `osName()` is covered by `PlatformAdditionsTests`, and the nested package by `BasicsTests`.
 
 The catalog itself is `appleApp/appleApp/Catalog/FeatureCatalog.swift`; `DemoComponents.swift` next to it holds the shared row and screen views.
+
+Every suite name in the table is a Swift Testing suite in `spm-consumer/Tests/SwiftExportTests/` and an XCTest class with the same name in `appleApp/Tests/Tests.swift`, which runs against the modules that `embedSwiftExportForXcode` embeds in the app, on both iOS and macOS. The UIKit checks only run on iOS. `PlatformTests` is app-only; its spm counterpart is `ModulesTests.platformSpecificApi`, which runs on macOS.
+
+A declaration that needs an opt-in in Kotlin is only visible to Swift through an SPI import. The SPI name is the annotation's fully qualified name, with `$` in place of the dots:
+
+```swift
+@_spi(com$github$jetbrains$swiftexport$ExperimentalSampleApi) import Shared
+```
+
+To use a Swift-only API from Kotlin, declare a function type in Kotlin and let Swift provide the implementation as a closure. `FunctionTypes.kt` declares an MD5 hasher this way, and the Swift side implements it with CryptoKit.
 
 ## Project structure
 
@@ -47,7 +59,7 @@ The catalog itself is `appleApp/appleApp/Catalog/FeatureCatalog.swift`; `DemoCom
 - `:module-b` - A Kotlin library with no Swift export configuration at all. `:shared` decides how it appears in Swift (`ModuleB`). This is what a consumer does when a library says nothing about itself.
 - `:module-c` - An `implementation` dependency of `:shared`. By default, Swift would only get the types that the `Shared` API uses. `:shared` exports the whole module as `ModuleC` with `SwiftExportVisibility.EXPOSED`.
 - `:module-d` - Another `implementation` dependency, hidden from Swift with `SwiftExportVisibility.HIDDEN`. `Shared` has a class that inherits from its `Engine`, so Swift gets `Engine` as an empty stub with no members.
-- `appleApp` - A SwiftUI app for iOS and macOS, built from a single multiplatform Xcode target. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app's only screen lists the features with live results.
+- `appleApp` - A SwiftUI app for iOS and macOS, built from a single multiplatform Xcode target. A Run Script build phase calls `:shared:embedSwiftExportForXcode` to build and embed the Kotlin code. The app opens on the feature catalog, and every screen shows live results.
 - `spm-consumer` - A plain Swift package that depends on the package produced by `:shared:exportDebugSwiftPackage`. It has a small executable and the language feature tests, which run on macOS with `swift test`.
 
 `kotlinx-coroutines-core` is a plain `implementation` dependency of `:shared` and shows the default behavior. It gets its own `OrgJetbrainsKotlinxKotlinxCoroutinesCore` Swift module, which contains only the declarations the `Shared` API refers to, such as `Flow`.
@@ -209,49 +221,6 @@ In Xcode, use **File > Add Package Dependencies… > Add Local…**, select `sha
 
 In Kotlin 2.5.0, you can't combine Swift package export with `swiftPMDependencies {}`. Support for this combination is planned for Kotlin 2.5.20.
 
-## Language features
-
-The Kotlin API of `:shared` is split into one file per topic. Comments in each file say what the declarations turn into in Swift. The tests in `spm-consumer/Tests/SwiftExportTests` call them from Swift.
-
-| Kotlin source | Swift tests | Covers |
-|---|---|---|
-| `Basics.kt` | `BasicsTests.swift` | Top-level functions and properties, `const val`, primitive and unsigned types, `Char`, nullability, overloads, `vararg`, `Any`, `Unit`, `Nothing` |
-| `ContextParameters.kt` | `BasicsTests.swift` | Context parameters as leading unlabeled Swift parameters |
-| `Classes.kt` | `ClassesTests.swift` | Classes, secondary constructors, nested and inner classes, type aliases, open and abstract classes, Swift subclasses that override open methods and properties and call `super`, objects, companion objects, data classes, value classes, property visibility, `lateinit` |
-| `Interfaces.kt` | `InterfacesTests.swift` | Interfaces as Swift protocols, default methods, Swift classes implementing Kotlin interfaces, `fun interface` |
-| `SealedTypes.kt`, `Enums.kt` | `SealedAndEnumTests.swift` | Sealed classes and interfaces with exhaustive `switch` over `sealedType()`, enum classes as native Swift enums |
-| `Generics.kt` | `TypesTests.swift` | Generic classes and functions (type-erased) |
-| `Collections.kt` | `TypesTests.swift` | `List`, `Set` and `Map` as Swift collections, ranges, mutable collections, `ByteArray` and `StringBuilder` from the `KotlinStdlib` module |
-| `Operators.kt` | `TypesTests.swift` | Arithmetic and comparison operators, subscripts, `contains`, `invoke` as `callAsFunction`, `infix` |
-| `Extensions.kt` | `TypesTests.swift` | Extension functions and properties on Kotlin and Swift types, on nullable types |
-| `FunctionTypes.kt` | `TypesTests.swift` | Function types as Swift closures, Swift implementations of Kotlin-declared dependencies |
-| `Coroutines.kt` | `CoroutinesTests.swift` | `suspend` functions as `async`, Swift overrides of `suspend` functions, `Flow` and `SharedFlow` as `AsyncSequence`, `StateFlow.value`, settable `MutableStateFlow.value`, suspend function types, cancellation |
-| `Exceptions.kt` | `ExceptionsTests.swift` | `@Throws` functions and constructors as Swift `throws` |
-| `Annotations.kt` | `AnnotationsTests.swift`, `ClassesTests.swift` | KDoc as Swift documentation comments, `@ObjCName`, `@HiddenFromObjC`, `@Deprecated` as `@available(*, deprecated)`, `@RequiresOptIn` as Swift SPI |
-| `nested/NestedPackage.kt` | `BasicsTests.swift` | Packages outside of `rootPackage` as Swift namespaces |
-| `iosMain`, `macosMain` | `appleApp/Tests/Tests.swift`, `ModulesTests.swift` | Platform-specific API, UIKit and Foundation types |
-
-`appleApp/Tests/Tests.swift` runs the same checks with XCTest against the modules that `embedSwiftExportForXcode` embeds in the app, on both iOS and macOS. The UIKit checks only run on iOS.
-
-A declaration that needs an opt-in in Kotlin is only visible to Swift through an SPI import. The SPI name is the annotation's fully qualified name, with `$` in place of the dots:
-
-```swift
-@_spi(com$github$jetbrains$swiftexport$ExperimentalSampleApi) import Shared
-```
-
-To use a Swift-only API from Kotlin, declare a function type in Kotlin and let Swift provide the implementation as a closure. `FunctionTypes.kt` declares an MD5 hasher this way, and the Swift side implements it with CryptoKit.
-
-### Known limitations
-
-Some things don't map to Swift yet. The sample runs into these:
-
-- Default argument values are not exported, so Swift callers pass every argument (`formatPrice`).
-- Generics are erased. Type parameters become `(any KotlinRuntimeSupport._KotlinBridgeable)?`, so Swift has to cast values (`Box`).
-- Data classes get `copy`, but no `componentN` functions. `==`, `hashValue` and `description` come from `NSObject`, which Kotlin wires to `equals`, `hashCode` and `toString`.
-- Mutable collections and arrays stay Kotlin types rather than Swift collections (`mutableNames()`). `compareTo` gives you `<` and `>`, but no `Comparable` conformance.
-- A Swift class that implements a Kotlin interface must inherit from an exported Kotlin class (`GreetingBase`), because `KotlinBase` can't be instantiated from Swift ([KT-88251](https://youtrack.jetbrains.com/issue/KT-88251)).
-- Swift names can clash with SDK names. SwiftUI also declares `Shape`, so `appleApp` writes `Shared.Shape`.
-
 ## Hiding a dependency
 
 `:shared` uses Koin internally, but `HiddenDependency.kt` leaks it into the public API on purpose:
@@ -267,15 +236,14 @@ object AppGraph {
 }
 ```
 
-Koin is an `implementation` dependency, but Swift Export follows every type that appears in the exported API. Without any configuration, Koin is exported transitively as the `IoInsertKoinKoinCore` Swift module: about 1,800 lines of generated Swift with 40 types, plus a `KotlinStdlib` module with about 1,700 lines.
+Koin is an `implementation` dependency, but Swift Export follows every type that appears in the exported API. Without any configuration, Koin is exported transitively as the `IoInsertKoinKoinCore` Swift module: 1,818 lines of generated Swift with 41 declarations, plus a `KotlinStdlib` module with 2,341 lines.
 
 `configure(libs.koin.core, SwiftExportVisibility.HIDDEN)` stops that:
 
-- Koin's types become empty stub classes (`Koin`, `Module`) with no members. `IoInsertKoinKoinCore.swift` shrinks to 23 lines, and `KotlinStdlib.swift` to about 240.
+- Koin's types become empty stub classes (`Koin`, `Module`) with no members. `IoInsertKoinKoinCore.swift` shrinks to 23 lines, and `KotlinStdlib.swift` to 1,711.
 - The leaked declarations still compile in Swift, but their bodies are `fatalError()`. The "Call AppGraph.shared.koin" button on the screen shows the crash.
 - Declarations that don't mention Koin, such as `greetingService()`, work normally.
 - The same visibility hides `:module-d`: its `Engine` becomes an empty stub, and `Shared.Car` can still inherit from it.
-- The Swift Export part of the build gets faster: `./gradlew :shared:embedSwiftExportForXcode` with all Swift Export outputs deleted took a median of 10.3 s without HIDDEN and 9.3 s with it (5 runs each, Apple M5 Max). Most of the saving is in generating, compiling and linking less code.
 
 HIDDEN is also the way out when a dependency's generated code doesn't compile. Hide the dependency, then make sure no Swift-facing declaration mentions its types.
 
@@ -286,9 +254,13 @@ These are visible in the sample as workarounds, or not shown at all:
 - Default argument values are not exported. Swift passes every argument; add Kotlin overloads for common cases (`formatPrice` in `Basics.kt`).
 - Generics are erased, so values of type parameters must be cast in Swift, and functions that take a generic class with a concrete type argument (`ScreenState<Profile>`) are not exported. Wrap generic classes in non-generic ones for the Swift-facing API (`GenericWrappers.kt`). A bare Swift integer literal passed as `Any` arrives in Kotlin as `Double`; use `Int32(7)`.
 - `protected` members and `inline` functions with `reified` type parameters are not exported.
+- Data classes get `copy`, but no `componentN` functions. `==`, `hashValue` and `description` come from `NSObject`, which Kotlin wires to `equals`, `hashCode` and `toString`.
 - Mutable collections are not converted to Swift collections: a returned `MutableList` is an opaque `any kotlin.collections.MutableList`. Keep read-only `List`, `Set` and `Map` in Swift-facing signatures.
+- `compareTo` gives you `<` and `>`, but no `Comparable` conformance.
 - Abstract members that a Swift subclass doesn't override compile, but trap at runtime.
 - An exception thrown from a function without `@Throws` terminates the app.
+- A Swift class that implements a Kotlin interface inherits `KotlinBase` together with the protocol (`ShoutingTranslator`, `SwiftUserRepository`).
+- Swift names can clash with SDK names. SwiftUI also declares `Shape`, so the app writes `Shared.Shape`.
 
 ## Getting started
 
