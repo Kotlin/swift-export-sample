@@ -13,6 +13,8 @@ import ModuleD
 import KotlinStdlib
 // KotlinBase, which Swift implementations of Kotlin interfaces inherit, lives in KotlinRuntime
 import KotlinRuntime
+// The hidden Koin dependency is exported as a stub module
+import IoInsertKoinKoinCore
 
 // These tests run on iOS and macOS against the modules embedded into the app by `embedSwiftExportForXcode`.
 // spm-consumer/Tests checks the same features against the exported Swift package.
@@ -509,5 +511,248 @@ final class CoroutinesTests: XCTestCase {
             XCTAssertTrue(error is CancellationError)
         }
         await fulfillment(of: [cancelled], timeout: 1)
+    }
+}
+
+// MARK: - Hiding a dependency (Koin)
+
+final class HiddenDependencyTests: XCTestCase {
+
+    func testWrapperApiHidesKoin() {
+        // AppGraph.greetingService() resolves through Koin on the Kotlin side
+        XCTAssertEqual(AppGraph.shared.greetingService().welcome(name: "Swift"), "Welcome, Swift! (resolved by Koin)")
+    }
+
+    func testKoinTypesAreEmptyStubs() {
+        // HIDDEN keeps the leaked types visible, but only as empty stub classes.
+        // AppGraph.koin and AppGraph.modules() still compile, but calling them traps
+        let koin: AnyClass = ExportedKotlinPackages.org.koin.core.Koin.self
+        let module: AnyClass = ExportedKotlinPackages.org.koin.core.module.Module.self
+        XCTAssertTrue(koin is KotlinBase.Type)
+        XCTAssertTrue(module is KotlinBase.Type)
+    }
+}
+
+// MARK: - Implementing in Swift
+
+// A Swift implementation of the Kotlin UserRepository interface: a Flow property
+// and a suspend function, backed by a Kotlin MutableStateFlow from mutableStateFlow(initial:)
+final class SwiftUserRepository: KotlinBase, UserRepository {
+    private let user = mutableStateFlow(initial: "")
+
+    var signedInUser: any KotlinTypedFlow<String> { user }
+
+    func signInUser(user: String) async throws {
+        self.user.value = user
+    }
+}
+
+final class SwiftImplementationTests: XCTestCase {
+
+    func testKotlinConsumesTheSwiftRepository() async throws {
+        let repository = SwiftUserRepository()
+        let viewModel = SignInViewModel(repository: repository)
+
+        var greetings: [String] = []
+        for try await greeting in viewModel.greeting.asAsyncSequence() {
+            greetings.append(greeting)
+            if greetings.count == 1 {
+                try await viewModel.signIn(user: "Alice")
+            }
+            if greetings.count == 2 {
+                break
+            }
+        }
+        XCTAssertEqual(greetings, ["Nobody is signed in", "Hello, Alice!"])
+    }
+
+    func testSignInTrimsTheName() async throws {
+        // The Kotlin InMemoryUserRepository, for comparison with the Swift one
+        let viewModel = SignInViewModel(repository: InMemoryUserRepository())
+
+        var greetings: [String] = []
+        for try await greeting in viewModel.greeting.asAsyncSequence() {
+            greetings.append(greeting)
+            if greetings.count == 1 {
+                try await viewModel.signIn(user: "  Bob ")
+            }
+            if greetings.count == 2 {
+                break
+            }
+        }
+        XCTAssertEqual(greetings, ["Nobody is signed in", "Hello, Bob!"])
+    }
+}
+
+// MARK: - Generic wrappers
+
+final class GenericWrappersTests: XCTestCase {
+
+    func testGenericStatePayloadsAreErased() async throws {
+        var states: [ScreenState] = []
+        for try await state in ProfileLoader().load(succeed: true).asAsyncSequence() {
+            states.append(state)
+        }
+        XCTAssertEqual(states.count, 2)
+        guard case .ready(let ready) = states[1].sealedType() else {
+            XCTFail("expected Ready with a Profile payload")
+            return
+        }
+        // Ready<T>.data is (any _KotlinBridgeable)?, so Swift casts it back
+        XCTAssertEqual((ready.value.data as? Profile)?.name, "Kodee")
+        XCTAssertEqual((ready.value.data as? Profile)?.followers, 2025)
+    }
+
+    func testWrapperPayloadsAreTyped() async throws {
+        let model = ProfileScreenModel(loader: ProfileLoader())
+
+        var states: [ProfileState] = []
+        for try await state in model.load(succeed: false).asAsyncSequence() {
+            states.append(state)
+        }
+        XCTAssertEqual(states.count, 2)
+        guard case .error(let error) = states[1].sealedType() else {
+            XCTFail("expected Error")
+            return
+        }
+        XCTAssertEqual(error.value.message, "No connection")
+        // Ready carries a typed Profile, and headline(state:) is exported
+        // because ProfileState is not generic
+        XCTAssertEqual(model.headline(state: states[0]), "Loading…")
+        XCTAssertEqual(model.headline(state: states[1]), "No connection")
+    }
+}
+
+// MARK: - Features added to the topic files
+
+// A Swift implementation of the Kotlin Translator interface, conforming to KotlinBase directly
+final class ShoutingTranslator: KotlinBase, Translator {
+    var language: String { "Shouting" }
+
+    func translate(word: String) -> String {
+        word.uppercased()
+    }
+}
+
+final class TranslatorTests: XCTestCase {
+
+    func testKotlinTranslator() {
+        let translator = defaultTranslator()
+        XCTAssertEqual(translator.language, "Pig Latin")
+        XCTAssertEqual(translator.translate(word: "hello"), "ellohay")
+        // The default implementation maps over translate(word:)
+        XCTAssertEqual(translator.translateAll(words: ["a", "b"]), ["aay", "bay"])
+        XCTAssertEqual(translateSentence(sentence: "swift export", translator: translator), "[Pig Latin] wiftsay xporteay")
+    }
+
+    func testSwiftTranslatorPassedToKotlin() {
+        XCTAssertEqual(translateSentence(sentence: "swift export", translator: ShoutingTranslator()), "[Shouting] SWIFT EXPORT")
+        // Kotlin's default translateAll(words:) calls the Swift translate(word:)
+        XCTAssertEqual(ShoutingTranslator().translateAll(words: ["a", "b"]), ["A", "B"])
+    }
+}
+
+final class BasicsAdditionsTests: XCTestCase {
+
+    func testObjCNameRenamesTopLevelFunctions() {
+        // Kotlin makeLoud(text:), exported as shout(text:)
+        XCTAssertEqual(shout(text: "kotlin"), "KOTLIN")
+    }
+
+    func testFormatPriceOverloadForTheDefaultValue() {
+        XCTAssertEqual(formatPrice(amount: 9.99), "9.99 EUR")
+    }
+}
+
+final class ClassesAdditionsTests: XCTestCase {
+
+    func testCompanionObjectProperties() {
+        XCTAssertEqual(Temperature.Companion.shared.freezing.celsius, 0)
+        XCTAssertEqual(Temperature.Companion.shared.freezing.fahrenheit, 32)
+    }
+
+    func testInnerClassMutatesTheOuterInstance() {
+        let counter = StepCounter()
+        let step = StepCounter.Step(by: 5, outer__: counter)
+        XCTAssertEqual(step.apply(), 5)
+        XCTAssertEqual(step.by, 5)
+        // The inner instance mutated the outer counter
+        XCTAssertEqual(counter.value, 5)
+        XCTAssertEqual(step.apply(), 10)
+    }
+
+    func testObjectCallsTheExpectDeclaration() {
+        XCTAssertTrue(AppInfo.shared.banner().hasPrefix("Swift Export sample on "))
+    }
+}
+
+final class GenericsAdditionsTests: XCTestCase {
+
+    func testDescribeShowsTheErasedValue() {
+        XCTAssertEqual(Box(value: Int32(3)).describe(), "Box(3)")
+        XCTAssertEqual(boxOf(value: "text").describe(), "Box(text)")
+    }
+}
+
+final class CollectionsAdditionsTests: XCTestCase {
+
+    func testEvensInFiltersEvenNumbers() {
+        XCTAssertEqual(evensIn(range: 1...10), [2, 4, 6, 8, 10])
+    }
+}
+
+final class ExceptionsAdditionsTests: XCTestCase {
+
+    func testWalletThrowsWithAPayload() throws {
+        let wallet = try Wallet(balance: 10)
+        try wallet.pay(amount: 4)
+        XCTAssertEqual(wallet.balance, 6)
+
+        var caught: InsufficientFundsException?
+        do {
+            try wallet.pay(amount: 25)
+        } catch let error as InsufficientFundsException {
+            caught = error
+        }
+        XCTAssertEqual(caught?.missing, 19)
+        // The failed payment did not change the balance
+        XCTAssertEqual(wallet.balance, 6)
+        XCTAssertThrowsError(try Wallet(balance: -1))
+    }
+}
+
+final class CoroutinesAdditionsTests: XCTestCase {
+
+    func testCountdownFinishes() async throws {
+        let countdown = Countdown()
+        let result = try await countdown.run(from: 1)
+        XCTAssertEqual(result, 1)
+        XCTAssertFalse(countdown.wasCancelled)
+    }
+
+    func testCountdownSeesCancellation() async throws {
+        let countdown = Countdown()
+        let task = Task { try await countdown.run(from: 30) }
+        try await Task.sleep(for: .milliseconds(200))
+        task.cancel()
+        do {
+            try await task.value
+            XCTFail("Expected CancellationError")
+        } catch {
+            XCTAssertTrue(error is CancellationError)
+        }
+        // The Kotlin object saw the cancellation and kept the flag for Swift
+        XCTAssertTrue(countdown.wasCancelled)
+    }
+}
+
+final class PlatformAdditionsTests: XCTestCase {
+
+    func testExpectActualCollapsesToOneFunction() {
+        #if os(macOS)
+        XCTAssertTrue(osName().hasPrefix("Version"))
+        #elseif os(iOS)
+        XCTAssertEqual(osName(), "iOS")
+        #endif
     }
 }
