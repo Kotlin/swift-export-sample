@@ -35,7 +35,9 @@ struct SwiftImplementationView: View {
         ) {
             Section("Kotlin SignInViewModel → Swift SwiftUserRepository") {
                 TextField("User name", text: $name)
+                    #if os(iOS)
                     .textInputAutocapitalization(.words)
+                    #endif
                 Button(isSigningIn ? "Signing in…" : "try await viewModel.signIn(user: name)") {
                     signIn()
                 }

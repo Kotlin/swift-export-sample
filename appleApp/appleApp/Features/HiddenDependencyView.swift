@@ -23,8 +23,8 @@ struct HiddenDependencyView: View {
                 DemoRow("Car().drive() — Car : Engine, Engine is an empty stub", Car().drive())
             }
             Section("Generated Swift for Koin") {
-                DemoRow("without HIDDEN", "IoInsertKoinKoinCore.swift: 1,818 lines, 40 types; KotlinStdlib.swift: 1,729 lines")
-                DemoRow("with HIDDEN", "IoInsertKoinKoinCore.swift: 23 lines, 2 empty stubs; KotlinStdlib.swift: 242 lines")
+                DemoRow("without HIDDEN", "IoInsertKoinKoinCore.swift: 1,818 lines; KotlinStdlib.swift: 2,341 lines")
+                DemoRow("with HIDDEN", "IoInsertKoinKoinCore.swift: 23 lines, 2 empty stubs; KotlinStdlib.swift: 1,711 lines")
             }
         }
         .confirmationDialog("This calls a fatalError() stub and terminates the app.", isPresented: $confirmTrap, titleVisibility: .visible) {

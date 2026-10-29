@@ -16,7 +16,9 @@ struct FeatureScreen<Content: View>: View {
             content
         }
         .navigationTitle(title)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
 
@@ -45,6 +47,8 @@ struct DemoRow: View {
             Text("→ \(result)")
                 .foregroundStyle(.secondary)
         }
+        // Read by VoiceOver as a single element
+        .accessibilityElement(children: .combine)
     }
 }
 
