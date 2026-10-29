@@ -4,7 +4,7 @@ import SwiftUI
 struct SwiftExportSampleApp: App {
 	var body: some Scene {
 		WindowGroup {
-			ContentView()
+			FeatureCatalog()
 		}
 	}
 }
