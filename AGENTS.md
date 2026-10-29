@@ -27,10 +27,10 @@ The public Kotlin Swift export sample. It shows how Kotlin Multiplatform code is
 
 ## Adding a Swift export feature
 
-1. Add the Kotlin declarations to the matching topic file in `shared/`.
+1. Add the Kotlin declarations to the matching topic file in `shared/`. A topic file `X.kt` has a demo screen `appleApp/appleApp/Features/XView.swift` with the same name; keep that pairing for new topics.
 2. Read the generated Swift signature in `shared/SwiftPackage/Debug/Sources/<Module>/<Module>.swift` before writing Swift against it. Argument labels, optionality and namespaces are easy to guess wrong.
-3. Test it in `spm-consumer/Tests/SwiftExportTests/` and in `appleApp/Tests/Tests.swift`.
-4. If it is visible in a UI, add a row to `appleApp/appleApp/ContentView.swift`.
+3. Test it in `spm-consumer/Tests/SwiftExportTests/` and in `appleApp/Tests/Tests.swift`, with the same test name in both.
+4. If it is visible in a UI, add rows to the topic's `XView.swift` screen, and a link in `appleApp/appleApp/Catalog/FeatureCatalog.swift` for a new feature.
 5. Update the feature table in `README.md`, and the known limitations if there is one.
 
 ## Swift export pitfalls
@@ -39,7 +39,7 @@ The public Kotlin Swift export sample. It shows how Kotlin Multiplatform code is
 - Swift export is Beta, but its Gradle DSL is still marked `@ExperimentalSwiftExportDsl`, and Gradle warns without `@OptIn(ExperimentalSwiftExportDsl::class)`. Keep the opt-in in build scripts, even though the Kotlin docs examples leave it out.
 - Kotlin can't call Swift-only APIs. Declare a function type or interface in Kotlin and let Swift implement it (see `FunctionTypes.kt`).
 - Swift package export can't be combined with `swiftPMDependencies {}` in 2.5.0. Support is planned for 2.5.20.
-- A Swift class that implements a Kotlin interface must inherit from an exported Kotlin class, because `KotlinBase` can't be instantiated from Swift (KT-88251).
+- A Swift class that implements a Kotlin interface inherits `KotlinBase` together with the protocol (`ShoutingTranslator`, `SwiftUserRepository`).
 - Passing a Swift dictionary to a Kotlin `Any` parameter crashes with SIGSEGV in 2.5.0-Beta2.
 - Declarations that need an opt-in are Swift SPI: `@_spi(<annotation FQN with $ instead of dots>) import Shared`.
 
