@@ -404,6 +404,26 @@ final class FunctionTypesTests: XCTestCase {
     }
 }
 
+final class ReceiverLambdasTests: XCTestCase {
+
+    func testReceiverIsTheFirstClosureParameter() {
+        // ShoppingList.() -> Unit is (ShoppingList) -> Void
+        let items = shoppingList { list in
+            list.add(item: "milk")
+            list.add(item: "bread")
+        }
+        XCTAssertEqual(items, ["milk", "bread"])
+        XCTAssertEqual(breakfast(), ["eggs", "coffee"])
+    }
+
+    func testOtherParametersFollowTheReceiver() {
+        // String.(Int) -> String is (String, Int32) -> String
+        XCTAssertEqual(numbered(words: ["Kotlin", "Swift"]) { word, number in "\(number). \(word)" }, ["1. Kotlin", "2. Swift"])
+        // A returned String.() -> String is (String) -> String
+        XCTAssertEqual(surroundWith(marker: "*")("bold"), "*bold*")
+    }
+}
+
 final class AnnotationsTests: XCTestCase {
 
     func testOptInRequirementsAreSpi() {
