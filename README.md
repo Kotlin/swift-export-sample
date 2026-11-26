@@ -32,6 +32,7 @@ The app opens on a list of features. The Kotlin API of `:shared` is split into o
 | | Generic wrappers | `GenericWrappers.kt` | `GenericWrappersView.swift` | `GenericWrappersTests` | A generic `ScreenState<T>` (Loading / Ready / Error) next to a non-generic `ProfileState` wrapper: typed payloads instead of casts, and an API that is exported at all |
 | | Function types | `FunctionTypes.kt` | `FunctionTypesView.swift` | `FunctionTypesTests` | Function types ↔ Swift closures, passing a Swift-only API (CryptoKit) to Kotlin |
 | | Lambdas with receiver | `ReceiverLambdas.kt` | `ReceiverLambdasView.swift` | `ReceiverLambdasTests` | `T.(A) -> R` → a Swift closure `(T, A) -> R` with the receiver first, a builder called from Swift and from Kotlin, a returned lambda with receiver |
+| | Inline & reified | `InlineFunctions.kt` | `InlineFunctionsView.swift` | `InlineFunctionsTests` | `inline` functions and an inline extension property exported as regular declarations, a `crossinline` lambda as an escaping closure, `reified` functions not exported, a `KClass` parameter → unavailable, a wrapper with a concrete type |
 | | Exceptions | `Exceptions.kt` | `ExceptionsView.swift` | `ExceptionsTests` | `@Throws` → `throws`, catching Kotlin exceptions by type, exception payloads |
 | Concurrency | Coroutines | `Coroutines.kt` | `CoroutinesView.swift` | `CoroutinesTests` | `suspend` → `async throws`, suspend lambdas, `Flow` → `AsyncSequence`, `StateFlow.value`, setting a `MutableStateFlow` from Swift, cancelling a Swift `Task` cancels the coroutine |
 | | Implementing in Swift | `SwiftImplementation.kt` | `SwiftImplementationView.swift` | `SwiftImplementationTests` | A Swift class implementing a Kotlin interface with a `Flow` property and a `suspend fun`, using a Kotlin-provided `MutableStateFlow`; Kotlin code consumes it |
@@ -254,7 +255,8 @@ These are visible in the sample as workarounds, or not shown at all:
 
 - Default argument values are not exported. Swift passes every argument; add Kotlin overloads for common cases (`formatPrice` in `Basics.kt`).
 - Generics are erased, so values of type parameters must be cast in Swift, and functions that take a generic class with a concrete type argument (`ScreenState<Profile>`) are not exported. Wrap generic classes in non-generic ones for the Swift-facing API (`GenericWrappers.kt`). A bare Swift integer literal passed as `Any` arrives in Kotlin as `Double`; use `Int32(7)`.
-- `protected` members and `inline` functions with `reified` type parameters are not exported.
+- `protected` members are not exported.
+- Functions with `reified` type parameters are not exported, and Swift can't pass a `KClass`, so a function with a `KClass` parameter is unavailable. Export a function that calls the reified one with a concrete type (`stringsIn` in `InlineFunctions.kt`). Plain `inline` functions are exported like regular ones.
 - Data classes get `copy`, but no `componentN` functions. `==`, `hashValue` and `description` come from `NSObject`, which Kotlin wires to `equals`, `hashCode` and `toString`.
 - Mutable collections are not converted to Swift collections: a returned `MutableList` is an opaque `any kotlin.collections.MutableList`. Keep read-only `List`, `Set` and `Map` in Swift-facing signatures.
 - `compareTo` gives you `<` and `>`, but no `Comparable` conformance.

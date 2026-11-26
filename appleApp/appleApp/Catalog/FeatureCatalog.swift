@@ -26,6 +26,7 @@ struct FeatureCatalog: View {
                     FeatureLink("Generic wrappers", "ScreenState<T> → non-generic ProfileState") { GenericWrappersView() }
                     FeatureLink("Function types", "function types ↔ Swift closures") { FunctionTypesView() }
                     FeatureLink("Lambdas with receiver", "the receiver becomes the first closure parameter") { ReceiverLambdasView() }
+                    FeatureLink("Inline & reified", "inline is exported, reified is not") { InlineFunctionsView() }
                     FeatureLink("Exceptions", "@Throws → throws, catching Kotlin exceptions") { ExceptionsView() }
                 }
                 Section("Concurrency") {

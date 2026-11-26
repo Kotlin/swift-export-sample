@@ -424,6 +424,30 @@ final class ReceiverLambdasTests: XCTestCase {
     }
 }
 
+final class InlineFunctionsTests: XCTestCase {
+
+    func testInlineFunctionsAreRegularFunctions() {
+        var calls = 0
+        XCTAssertEqual(countMatching(numbers: [1, 2, 3, 4]) { calls += 1; return $0 % 2 == 0 }, 2)
+        XCTAssertEqual(calls, 4)
+        XCTAssertEqual(Int32(7).squared, 49)
+    }
+
+    func testCrossinlineLambdaRunsLater() {
+        // The returned closure keeps the Swift closure, so it really is escaping
+        var asked = 0
+        let greet = greeter(name: { asked += 1; return "Swift" })
+        XCTAssertEqual(asked, 0)
+        XCTAssertEqual(greet(), "Hello, Swift!")
+        XCTAssertEqual(asked, 1)
+    }
+
+    func testReifiedFunctionsNeedAConcreteWrapper() {
+        // filterType<T>(items:) is not exported; stringsIn(items:) calls it with T = String
+        XCTAssertEqual(stringsIn(items: ["Kotlin", Int32(2), "Swift", nil]), ["Kotlin", "Swift"])
+    }
+}
+
 final class AnnotationsTests: XCTestCase {
 
     func testOptInRequirementsAreSpi() {
